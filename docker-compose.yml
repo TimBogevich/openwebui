@@ -66,16 +66,13 @@ services:
       OPENAI_API_KEYS: >-
         lm-studio;${REMOTE_API_KEY}
       # Branding
-      WEBUI_NAME: ГЦУ Ассистент
+      WEBUI_NAME: РЖД
       DEFAULT_LOCALE: ru-RU
-      # No auth (single-user internal deploy)
+      # No auth, no login, no admin (single-user internal kiosk)
       WEBUI_AUTH: "False"
-      WEBUI_AUTH_DISABLED: "true"
-      ENABLE_SIGNUP: "false"
       # DB for GCU data passthrough (filter uses this)
       GCU_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
       # Clean UI
-      WEBUI_SHOW_ADMIN_DETAILS: "false"
       ENABLE_COMMUNITY_SHARING: "false"
       DEFAULT_PROMPT_SUGGESTIONS: "[]"
     volumes:
@@ -84,8 +81,10 @@ services:
       - ./static/custom.css:/app/backend/open_webui/static/custom.css
       - ./static/loader.js:/app/backend/open_webui/static/loader.js
       - ./static/rzd_logo.png:/app/backend/open_webui/static/favicon.png
-      - ./static/rzd_logo.png:/app/backend/open_webui/static/splash.png
-      - ./static/rzd_logo.png:/app/backend/open_webui/static/splash-dark.png
+      - ./static/rzd_logo.png:/app/backend/open_webui/static/favicon.ico
+      - ./static/rzd_logo.png:/app/backend/open_webui/static/logo.png
+      - ./static/rzd_splash.png:/app/backend/open_webui/static/splash.png
+      - ./static/rzd_splash.png:/app/backend/open_webui/static/splash-dark.png
     depends_on:
       postgres:
         condition: service_healthy

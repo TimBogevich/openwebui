@@ -23,7 +23,7 @@ class Filter:
     def __init__(self):
         self.db_url = os.environ.get(
             "GCU_DATABASE_URL",
-            "postgresql://postgres:CHANGEME@127.0.0.1:5432/postgres"
+            "postgresql://postgres:Gcu2026!@127.0.0.1:5432/postgres"
         )
         # Keywords that trigger a DB lookup
         self.triggers = [
@@ -115,11 +115,20 @@ class Filter:
             return f"Ошибка запроса к БД: {e}"
 
     def inlet(self, body: dict, __user__: Optional[dict] = None) -> dict:
-        """
-        Called before sending messages to the model. If the last user message
-        is about report data, inject DB results as a system message so the
-        model answers from real data.
-        """
+        # Skip injection for models that use native tool calling (MCP) — they fetch
+        # data themselves via the `query` tool and don't need (and are actively
+        # derailed by) the filter pre-injecting its canned, often-wrong overview.
+        # This covers BOTH remote- presets AND any model whose request already
+        # carries tools / native function_calling (e.g. the local LM Studio 9B
+        # now bound to the MCP tool with function_calling=native).
+        if body.get("model", "").startswith("remote-"):
+            return body
+        if body.get("tools") or body.get("tool_ids"):
+            return body
+        params = body.get("params") or {}
+        if params.get("function_calling") == "native" or body.get("function_calling") == "native":
+            return body
+
         messages = body.get("messages", [])
         if not messages:
             return body

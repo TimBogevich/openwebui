@@ -1,0 +1,2 @@
+/* РЖД branding tweaks for Open WebUI — keep minimal. */
+img[src*="favicon"], img[src*="splash"], img[src*="logo"] { object-fit: contain; }
