@@ -2,6 +2,9 @@
 // Replaces "Open WebUI" with "РЖД Интер" in title + DOM, live.
 (function () {
   var FULL = "РЖД Интер";
+  // Force the sidebar open before hydration so hiding the toggle (custom.css)
+  // can never leave it stuck collapsed.
+  try { localStorage.setItem("sidebar", "true"); } catch (e) {}
   function scrub(t) {
     if (!t) return t;
     return t
