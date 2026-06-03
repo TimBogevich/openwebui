@@ -1,0 +1,50 @@
+services:
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    ports:
+      - "3000:8080"
+    volumes:
+      - openwebui-data:/app/backend/data
+      - ./custom.css:/app/build/static/custom.css
+      - ./custom.css:/app/backend/static/custom.css
+      - ./custom.css:/app/backend/open_webui/static/custom.css
+      - ./loader.js:/app/build/static/loader.js
+      - ./loader.js:/app/backend/static/loader.js
+      - ./loader.js:/app/backend/open_webui/static/loader.js
+      # Глобальная подмена favicon: используется как (1) favicon вкладки браузера,
+      # (2) fallback для аватарки модели (routers/models.py возвращает 302 на /static/favicon.png
+      # когда у модели нет meta.profile_image_url), (3) лого в сайдбаре.
+      - ./rzd_logo.png:/app/build/favicon.png
+      - ./rzd_logo.png:/app/build/static/favicon.png
+      - ./rzd_logo.png:/app/backend/static/favicon.png
+      - ./rzd_logo.png:/app/backend/open_webui/static/favicon.png
+      # Подмена splash-логотипа: index.html через inline-скрипт грузит
+      # /static/splash.png (светлая тема) или /static/splash-dark.png (тёмная)
+      # как <img id="logo"> на экране загрузки. Подменяем оба на лого РЖД.
+      - ./rzd_logo.png:/app/build/static/splash.png
+      - ./rzd_logo.png:/app/build/static/splash-dark.png
+      - ./rzd_logo.png:/app/backend/open_webui/static/splash.png
+      - ./rzd_logo.png:/app/backend/open_webui/static/splash-dark.png
+    environment:
+      - OPENAI_API_BASE_URL=${CUSTOM_API_BASE_URL}
+      - OPENAI_API_KEY=${CUSTOM_API_KEY}
+      - WEBUI_NAME=ГЦУ Ассистент
+      - DEFAULT_LOCALE=ru-RU
+      - WEBUI_AUTH=False
+      - WEBUI_AUTH_DISABLED=true
+      - ENABLE_SIGNUP=false
+      - WEBUI_SIGNUP_ALLOWED=false
+      - WEBUI_ENABLE_RAG_WEB_LOADER=false
+      - WEBUI_ENABLE_RAG_LOCAL_WEB=false
+      - WEBUI_ENABLE_IMAGE_GENERATION=false
+      - WEBUI_SHOW_ADMIN_DETAILS=false
+      - WEBUI_SHOW_MODEL_SELECTOR=false
+      - WEBUI_SHOW_USER_DETAILS=false
+      # Скрываем подсказки/предложенные промпты под чатом
+      - ENABLE_COMMUNITY_SHARING=false
+      - DEFAULT_PROMPT_SUGGESTIONS=[]
+    restart: unless-stopped
+
+volumes:
+  openwebui-data:

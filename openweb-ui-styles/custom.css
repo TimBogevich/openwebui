@@ -1,0 +1,742 @@
+/* ==========================================================================
+   ГЦУ Ассистент — Open WebUI Custom Theme (РЖД)
+   Подход: ID-селекторы и aria-label (sliplane.io guide)
+   ========================================================================== */
+
+:root {
+  /* RZD палитра */
+  --rzd-red: #E21A1A;
+  --rzd-red-dark: #B71515;
+  --rzd-red-deep: #8B0000;
+  --rzd-red-light: #FDEAEA;
+  --rzd-red-bg: #FFF8F8;
+
+  --rzd-text: #212121;
+  --rzd-text-secondary: #757575;
+
+  --rzd-white: #FFFFFF;
+  --rzd-gray-lightest: #F5F5F5;
+  --rzd-gray-light: #E8E8E8;
+  --rzd-gray: #9E9E9E;
+  --rzd-gray-dark: #616161;
+
+  --rzd-green: #2E7D32;
+  --rzd-yellow: #F9A825;
+
+  /* Тёмный сайдбар (как в mockup) */
+  --sidebar-bg: #1A1A1A;
+  --sidebar-hover: #2A2A2A;
+  --sidebar-active: #333333;
+  --sidebar-text: #E5E5E5;
+  --sidebar-text-dim: #8A8A8A;
+  --sidebar-border: #2A2A2A;
+}
+
+/* ==========================================================================
+   1. СЛАЙДБАР (тёмный, как в mockup)
+   ========================================================================== */
+
+#sidebar {
+  background-color: var(--sidebar-bg) !important;
+  border-right: 1px solid var(--sidebar-border) !important;
+  color: var(--sidebar-text) !important;
+}
+
+/* Все текстовые элементы в сайдбаре */
+#sidebar *,
+#sidebar a,
+#sidebar button,
+#sidebar span,
+#sidebar div {
+  color: var(--sidebar-text) !important;
+}
+
+/* Hover-эффект для элементов сайдбара */
+#sidebar a:hover,
+#sidebar button:hover,
+#sidebar [role="button"]:hover,
+#sidebar-chat-item:hover,
+#sidebar-folder-button:hover {
+  background-color: var(--sidebar-hover) !important;
+}
+
+/* Активный пункт чата */
+#sidebar-chat-item.selected,
+#sidebar-chat-item[aria-current="page"],
+#sidebar a.active,
+#sidebar .selected {
+  background-color: var(--sidebar-active) !important;
+}
+
+/* Название WebUI в сайдбаре — управляется через WEBUI_NAME env */
+#sidebar-webui-name {
+  color: var(--rzd-white) !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+}
+
+/* Скрыть оригинальное SVG-лого Open WebUI в сайдбаре, где это НЕ слот
+   home-кнопки (size-8.5). Сама favicon-картинка внутри home-кнопки
+   остаётся видимой и стилизуется ниже. */
+#sidebar #logo {
+  display: none !important;
+}
+
+/* Логотип РЖД в слоте home-кнопки сайдбара.
+   Open WebUI рендерит:
+     <a href="/" class="... size-8.5 ..."><img src="/static/favicon.png" class="rounded-full size-6"></a>
+   favicon.png примонтирован к rzd_logo.png (920×409, широкий),
+   поэтому rounded-full + дефолтный object-fit обрезает края.
+   Делаем плашку белой с расширением под широкий лого и внутренним отступом,
+   а картинку — прямоугольной с object-fit:contain. */
+#sidebar a[href="/"][class*="size-8.5"] {
+  background: var(--rzd-white) !important;
+  /* Расширяем слот, чтобы влез широкий логотип РЖД */
+  width: auto !important;
+  min-width: 2.125rem !important; /* fallback ≈ size-8.5 */
+}
+
+/* Отключаем hover-затемнение на белой плашке */
+#sidebar a[href="/"][class*="size-8.5"]:hover {
+  background: var(--rzd-white) !important;
+}
+
+#sidebar a[href="/"][class*="size-8.5"] img {
+  display: block !important;
+  width: auto !important;
+  height: 1.5rem !important; /* совпадает с size-6 */
+  max-width: 100% !important;
+  margin: 5px !important;
+  object-fit: contain !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+}
+
+/* Заголовки секций (Сегодня, Вчера, ...) */
+#sidebar-chat-group > div:first-child,
+#sidebar .text-xs.font-semibold {
+  color: var(--sidebar-text-dim) !important;
+}
+
+/* Кнопки иконок в сайдбаре */
+#sidebar-toggle-button,
+#sidebar-search-button,
+#sidebar-folder-button {
+  color: var(--sidebar-text-dim) !important;
+}
+
+#sidebar-toggle-button:hover,
+#sidebar-search-button:hover {
+  color: var(--rzd-white) !important;
+  background-color: var(--sidebar-hover) !important;
+}
+
+/* ==========================================================================
+   2. КНОПКА "НОВЫЙ ЧАТ"
+   ========================================================================== */
+
+#sidebar-new-chat-button,
+#new-chat-button {
+  background-color: var(--rzd-red) !important;
+  color: var(--rzd-white) !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  transition: background-color 0.2s ease !important;
+}
+
+#sidebar-new-chat-button:hover,
+#new-chat-button:hover {
+  background-color: var(--rzd-red-dark) !important;
+}
+
+#sidebar-new-chat-button *,
+#new-chat-button * {
+  color: var(--rzd-white) !important;
+}
+
+/* ==========================================================================
+   3. КНОПКА ОТПРАВКИ (красная круглая, как в mockup)
+   ========================================================================== */
+
+#send-message-button {
+  background-color: var(--rzd-red) !important;
+  color: var(--rzd-white) !important;
+  border-radius: 50% !important;
+  transition: background-color 0.2s ease !important;
+}
+
+#send-message-button:hover {
+  background-color: var(--rzd-red-dark) !important;
+}
+
+#send-message-button svg {
+  color: var(--rzd-white) !important;
+  fill: var(--rzd-white) !important;
+}
+
+/* Все button[type="submit"] — основные действия */
+button[type="submit"] {
+  background-color: var(--rzd-red) !important;
+  color: var(--rzd-white) !important;
+}
+
+button[type="submit"]:hover {
+  background-color: var(--rzd-red-dark) !important;
+}
+
+/* ==========================================================================
+   4. ИНПУТ ЧАТА
+   ========================================================================== */
+
+#chat-input-container,
+#message-input-container {
+  border-radius: 16px !important;
+  transition: border-color 0.15s, box-shadow 0.15s !important;
+}
+
+#chat-input-container:focus-within,
+#message-input-container:focus-within {
+  border-color: var(--rzd-red) !important;
+  box-shadow: 0 2px 12px rgba(226, 26, 26, 0.12) !important;
+}
+
+/* Кнопки внутри инпута */
+#voice-input-button,
+#input-menu-button,
+#integration-menu-button {
+  border-radius: 8px !important;
+  transition: background-color 0.15s !important;
+}
+
+#voice-input-button:hover,
+#input-menu-button:hover,
+#integration-menu-button:hover {
+  background-color: var(--rzd-gray-lightest) !important;
+  color: var(--rzd-text) !important;
+}
+
+/* ==========================================================================
+   5. ARIA-LABEL КНОПКИ (по гайду sliplane)
+   ========================================================================== */
+
+[aria-label="New Chat"] {
+  background-color: var(--rzd-red) !important;
+  color: var(--rzd-white) !important;
+}
+
+[aria-label="New Chat"]:hover {
+  background-color: var(--rzd-red-dark) !important;
+}
+
+[aria-label="Voice Input"] {
+  color: var(--rzd-text-secondary) !important;
+}
+
+[aria-label="Voice Input"]:hover {
+  color: var(--rzd-red) !important;
+}
+
+[aria-label="User Menu"] {
+  border-radius: 50% !important;
+}
+
+[aria-label="Chat"]:hover,
+[aria-label="Home"]:hover,
+[aria-label="Controls"]:hover,
+[aria-label="More"]:hover {
+  background-color: var(--sidebar-hover) !important;
+}
+
+/* ==========================================================================
+   6. КНОПКИ ДЕЙСТВИЙ ПОД СООБЩЕНИЕМ
+   ========================================================================== */
+
+#chat-copy-button,
+#chat-share-button,
+#chat-artifacts-button,
+#chat-context-menu-button,
+#continue-response-button,
+#delete-response-button,
+#merge-response-button,
+#generate-message-pair-button {
+  border-radius: 6px !important;
+  color: var(--rzd-text-secondary) !important;
+  transition: background-color 0.15s, color 0.15s !important;
+}
+
+#chat-copy-button:hover,
+#chat-share-button:hover,
+#chat-artifacts-button:hover,
+#chat-context-menu-button:hover,
+#continue-response-button:hover,
+#delete-response-button:hover,
+#merge-response-button:hover,
+#generate-message-pair-button:hover {
+  background-color: var(--rzd-gray-lightest) !important;
+  color: var(--rzd-text) !important;
+}
+
+/* Кнопки сохранения/отмены при редактировании */
+#confirm-edit-message-button,
+#save-edit-message-button,
+#save-new-message-button {
+  background-color: var(--rzd-red) !important;
+  color: var(--rzd-white) !important;
+}
+
+#close-edit-message-button {
+  color: var(--rzd-text-secondary) !important;
+}
+
+/* ==========================================================================
+   7. ИМЯ МОДЕЛИ — СКРЫТО ВЕЗДЕ
+   ========================================================================== */
+
+/* Имя модели над/в ответе ассистента */
+#response-message-model-name,
+[id^="response-message-model-name"],
+[id*="response-message-model-name"],
+/* Селектор/название модели в шапке чата */
+#model-selector,
+#model-selector-input,
+[id^="model-item-button"],
+[aria-label="Select a model"],
+[aria-label="Model Selector"],
+/* Подпись модели рядом с аватаркой ассистента */
+[class*="model-name"],
+[data-model-name],
+.model-tag,
+.model-label {
+  display: none !important;
+}
+
+/* ==========================================================================
+   8. ВЫБОР МОДЕЛИ
+   ========================================================================== */
+
+
+
+#model-search-input:focus {
+  border-color: var(--rzd-red) !important;
+  outline-color: var(--rzd-red) !important;
+}
+
+/* ==========================================================================
+   9. ВКЛАДКИ НАСТРОЕК
+   ========================================================================== */
+
+#settings-tabs-container button[aria-selected="true"],
+#admin-settings-tabs-container button[aria-selected="true"],
+#users-tabs-container button[aria-selected="true"] {
+  color: var(--rzd-red) !important;
+  border-bottom-color: var(--rzd-red) !important;
+}
+
+#tab-general,
+#tab-interface,
+#tab-connections,
+#tab-audio,
+#tab-personalization,
+#tab-account,
+#tab-tools,
+#tab-about,
+#tab-chats {
+  transition: color 0.15s !important;
+}
+
+/* ==========================================================================
+   10. ПЕРЕКЛЮЧАТЕЛИ (switches)
+   ========================================================================== */
+
+[role="switch"][aria-checked="true"] {
+  background-color: var(--rzd-red) !important;
+}
+
+/* ==========================================================================
+   11. ВСПЛЫВАЮЩИЕ ПОДСКАЗКИ (tippy.js)
+   ========================================================================== */
+
+.tippy-box {
+  background-color: var(--rzd-text) !important;
+  color: var(--rzd-white) !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+}
+
+.tippy-content {
+  color: var(--rzd-white) !important;
+}
+
+.tippy-arrow {
+  color: var(--rzd-text) !important;
+}
+
+/* ==========================================================================
+   12. CHECKBOX / RADIO
+   ========================================================================== */
+
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  accent-color: var(--rzd-red) !important;
+}
+
+/* ==========================================================================
+   13. ВЫДЕЛЕНИЕ ТЕКСТА
+   ========================================================================== */
+
+::selection {
+  background-color: var(--rzd-red) !important;
+  color: var(--rzd-white) !important;
+}
+
+/* ==========================================================================
+   14. СКРОЛЛБАР
+   ========================================================================== */
+
+::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(158, 158, 158, 0.4) !important;
+  border-radius: 3px !important;
+  border: none !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(158, 158, 158, 0.7) !important;
+}
+
+/* Сайдбар скролл — на тёмном фоне */
+#sidebar ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border: none !important;
+}
+
+#sidebar ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* ==========================================================================
+   15. ССЫЛКИ
+   ========================================================================== */
+
+a:not(#sidebar a):not(#sidebar *) {
+  color: var(--rzd-red) !important;
+}
+
+a:not(#sidebar a):hover {
+  color: var(--rzd-red-dark) !important;
+}
+
+/* ==========================================================================
+   16. ФОКУС-РИНГИ
+   ========================================================================== */
+
+*:focus-visible {
+  outline-color: var(--rzd-red) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--rzd-red) !important;
+  --tw-ring-color: var(--rzd-red) !important;
+}
+
+/* ==========================================================================
+   17. ТОСТЫ / УВЕДОМЛЕНИЯ
+   ========================================================================== */
+
+/* Закрыть тост */
+[aria-label="Close toast"]:hover,
+[aria-label="Dismiss notification"]:hover {
+  color: var(--rzd-red) !important;
+}
+
+/* ==========================================================================
+   18. KBD / ИНЛАЙН-КОД (для evidence-тегов)
+   ========================================================================== */
+
+.codespan {
+  background-color: var(--rzd-red-light) !important;
+  color: var(--rzd-red-deep) !important;
+  border-radius: 4px !important;
+  font-family: 'Consolas', 'Monaco', monospace !important;
+}
+
+/* ==========================================================================
+   19. STATUS / SHIMMER (загрузка)
+   ========================================================================== */
+
+#status-message {
+  color: var(--rzd-text-secondary) !important;
+}
+
+/* ==========================================================================
+   20. АВАТАР ПОЛЬЗОВАТЕЛЯ (красный круг)
+   ========================================================================== */
+
+[aria-label="User Menu"] img,
+[aria-label="User Menu"] > div {
+  border-radius: 50% !important;
+}
+
+/* ==========================================================================
+   21. УБРАТЬ ГРАДИЕНТЫ В САЙДБАРЕ (fade-эффект внизу)
+   ========================================================================== */
+
+/* Любые градиенты внутри сайдбара — выключаем */
+#sidebar [class*="bg-gradient"],
+#sidebar [class*="from-white"],
+#sidebar [class*="from-gray"],
+#sidebar [class*="to-transparent"] {
+  background-image: none !important;
+  background: transparent !important;
+}
+
+/* Конкретный навбар-градиент */
+#navbar-bg-gradient-to-b {
+  background-image: none !important;
+  background: transparent !important;
+  display: none !important;
+}
+
+/* ==========================================================================
+   22. БРЕНДИРОВАНИЕ: ЛОГО НА СТРАНИЦЕ АВТОРИЗАЦИИ
+   ========================================================================== */
+
+/* Скрыть оригинальный SVG-лого на странице входа */
+#auth-page #logo,
+#auth-page img[src*="favicon" i],
+#auth-page img[src*="logo" i],
+#auth-container #logo,
+#auth-container img[src*="favicon" i] {
+  display: none !important;
+}
+
+/* Заменить на красный квадрат с "РЖД" */
+#auth-page > div > div:first-child::before,
+#auth-container > div:first-child::before {
+  content: "РЖД";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: var(--rzd-red);
+  color: var(--rzd-white);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -1px;
+  border-radius: 12px;
+  margin: 0 auto 20px;
+}
+
+/* ==========================================================================
+   23. СПЛЭШ-ЭКРАН (загрузка)
+   ========================================================================== */
+
+/* Splash-экран
+   --------------------------------------------------------------------------
+   index.html inline-скриптом создаёт <img id="logo" src="/static/splash.png"
+   или "/static/splash-dark.png"> и абсолютно позиционирует его (top:44%).
+   Мы подменили эти PNG на rzd_logo.png через docker-compose volumes,
+   поэтому САМИ inline-стили img трогать НЕЛЬЗЯ — иначе уедет позиция/размер.
+   Скрываем только дополнительный анимированный логотип темы "her". */
+#splash-screen #logo-her {
+  display: none !important;
+}
+
+/* Прогресс-бар splash-экрана — красный */
+#splash-screen #progress-bar {
+  background: var(--rzd-red) !important;
+}
+
+/* ==========================================================================
+   24. СКРЫТЬ УПОМИНАНИЯ "Open WebUI" В ИНТЕРФЕЙСЕ
+   ========================================================================== */
+
+/* Футер с "Powered by Open WebUI" если есть */
+footer:has(a[href*="openwebui" i]),
+footer:has(a[href*="open-webui" i]),
+[class*="footer"]:has(a[href*="openwebui" i]) {
+  display: none !important;
+}
+
+/* Ссылки на проект Open WebUI */
+a[href*="openwebui.com"],
+a[href*="github.com/open-webui"],
+a[href*="docs.openwebui.com"] {
+  display: none !important;
+}
+
+/* ==========================================================================
+   25. СКРЫТЬ ЭКРАН АВТОРИЗАЦИИ ПОЛНОСТЬЮ
+   ========================================================================== */
+
+/* Если бэкенд всё же отрендерил страницу логина — скрываем её визуально.
+   Основной отключатель — WEBUI_AUTH=False в docker-compose.yml.
+   Это страховка на случай, если экран мелькает при загрузке. */
+#auth-page,
+#auth-container,
+#login-page,
+#signup-page,
+[id^="auth-"],
+form[action*="signin" i],
+form[action*="login" i],
+form[action*="signup" i] {
+  display: none !important;
+}
+
+/* ==========================================================================
+   26. СКРЫТЬ СЕКЦИЮ "ПРЕДЛОЖЕНО" ПОД ЧАТОМ
+   ========================================================================== */
+
+/* Suggestion prompts / Prompt suggestions / Conversation starters */
+#suggestions-container,
+#suggestion-prompts,
+#prompt-suggestions,
+#conversation-starters,
+[id^="suggestion-"],
+[id^="suggestions-"],
+[id^="prompt-suggestion-"],
+[aria-label="Prompt Suggestions"],
+[aria-label="Suggested Prompts"],
+[aria-label="Conversation Starters"],
+.suggestion-prompts,
+.prompt-suggestions,
+.conversation-starters {
+  display: none !important;
+}
+
+/* Реальная разметка Open WebUI (Svelte компонент Suggestions):
+   контейнер `div.mx-5`, заголовок и карточки помечены классом svelte-6tnq1o.
+   Скрываем родителя по наличию этого компонента — это надёжнее, чем
+   подгонка под хэш Svelte при ребилде. */
+div.mx-5:has(.svelte-6tnq1o),
+div.mx-auto.max-w-2xl:has(.svelte-6tnq1o) {
+  display: none !important;
+}
+
+/* Подстраховка: скрыть сами карточки-кнопки подсказок, если контейнер уцелел */
+button.waterfall {
+  display: none !important;
+}
+
+/* ==========================================================================
+   27. СКРЫТЬ ПРИВЕТСТВЕННЫЙ БЛОК ПЛЕЙСХОЛДЕРА (АВАТАРКА + ИМЯ МОДЕЛИ)
+   --------------------------------------------------------------------------
+   На пустом чате Open WebUI рендерит обёртку
+     div.m-auto.max-w-6xl.translate-y-6.py-24       (Placeholder-wrapper)
+       └─ div.w-full.text-3xl.font-primary          (общий блок шапки + инпут)
+            └─ div.w-full.flex.flex-col...          (колонка)
+                 ├─ div.flex.flex-row.justify-center.gap-2.5.w-fit.max-w-xl  ← это
+                 │     ├─ div.flex.shrink-0.justify-center  (аватарка)
+                 │     └─ div.text-3xl.line-clamp-1         ("anthropic/claude-3-haiku")
+                 ├─ div.flex.mt-1.mb-2
+                 └─ div.text-base.font-normal.py-3          (ОБЁРТКА ИНПУТА — НЕ ТРОГАТЬ)
+   Поэтому прячем именно flex-row, оставляя инпут на месте.
+   Дополнительно требуем, чтобы внутри НЕ было textarea / contenteditable —
+   страховка на случай, если разметку перетряхнут.
+   ========================================================================== */
+
+div.flex.flex-row.justify-center.w-fit.max-w-xl:not(:has(textarea)):not(:has([contenteditable="true"])) {
+  display: none !important;
+}
+
+/* ==========================================================================
+   28. СКРЫТЬ ВКЛАДКУ "РАБОЧЕЕ ПРОСТРАНСТВО" В САЙДБАРЕ
+   --------------------------------------------------------------------------
+   Open WebUI рендерит её как:
+     <a href="/workspace" aria-label="Рабочее пространство"> ... </a>
+   В режиме WEBUI_AUTH=False текущий пользователь принудительно "admin",
+   а в коде сайдбара проверка пускает админа всегда:
+     user.role === "admin" || user.permissions.workspace.*
+   Поэтому env-переменные USER_PERMISSIONS_WORKSPACE_* НЕ помогают —
+   единственный надёжный путь убрать ссылку (без потери прав админа на API)
+   это спрятать её CSS-ом. Селекторы: href (стабильно) + aria-label (локализованный).
+   ========================================================================== */
+
+#sidebar a[href="/workspace"],
+#sidebar a[href^="/workspace/"],
+#sidebar a[aria-label="Рабочее пространство"],
+#sidebar a[aria-label="Workspace"],
+#sidebar-workspace-button {
+  display: none !important;
+}
+
+/* ==========================================================================
+   29. SIDEBAR ВСЕГДА ОТКРЫТ — СКРЫТЬ КНОПКУ ТОГГЛА
+   --------------------------------------------------------------------------
+   loader.js принудительно ставит localStorage["sidebar"]="true" до hydration,
+   поэтому при загрузке sidebar всегда раскрыт. Чтобы пользователь не мог его
+   свернуть, прячем кнопку-тоггл. В разных состояниях у неё разный aria-label
+   и иногда отсутствует id — поэтому матчим по всем известным признакам.
+   ========================================================================== */
+
+#sidebar-toggle-button,
+#sidebar [aria-label="Закрыть боковую панель"],
+#sidebar [aria-label="Открыть боковую панель"],
+[aria-label="Close sidebar"],
+[aria-label="Open sidebar"],
+[aria-label="Toggle Sidebar"] {
+  display: none !important;
+}
+
+/* ==========================================================================
+   30. ОТСТУП ВНИЗУ ХЕДЕРА САЙДБАРА
+   --------------------------------------------------------------------------
+   Хедер сайдбара (лого + название + тоггл) — sticky-блок с классом `.sidebar`
+   внутри #sidebar. Базовый Tailwind `pb-1.5` визуально жмёт элементы под ним.
+   Увеличиваем нижний отступ до 20px.
+   ========================================================================== */
+
+#sidebar div.sidebar.sticky.top-0 {
+  padding-bottom: 20px !important;
+}
+
+/* ==========================================================================
+   31. СКРЫТЬ КНОПКУ "МЕНЮ ПОЛЬЗОВАТЕЛЯ" В НИЖНЕМ БЛОКЕ САЙДБАРА
+   --------------------------------------------------------------------------
+   Кнопка с aria-label="Меню пользователя" / "User Menu" сидит в нижнем
+   sticky-блоке (#sidebar > div > div.sticky.bottom-0.sidebar). При
+   WEBUI_AUTH=False она бессмысленна (один зашитый admin-пользователь).
+   ========================================================================== */
+
+#sidebar div.sidebar.sticky.bottom-0 button[aria-label="Меню пользователя"],
+#sidebar div.sidebar.sticky.bottom-0 button[aria-label="User Menu"] {
+  display: none !important;
+}
+
+/* ==========================================================================
+   32. АВАТАРКА МОДЕЛИ — ПОКАЗЫВАТЬ ЛОГО РЖД ЦЕЛИКОМ (НЕ КРУГЛОЕ)
+   --------------------------------------------------------------------------
+   В сообщениях ассистента Open WebUI рендерит:
+     #message-<uuid> > div.shrink-0.@lg:flex.mt-1 > img
+   с дефолтным классом "rounded-full" и без object-fit.
+   Логотип РЖД (920×409, широкий) при круглой обрезке теряет края.
+   Делаем контейнер прямоугольным, без круглой маски, и говорим
+   img.object-fit=contain — так весь лого видно целиком.
+
+   Селектор по src — единственный надёжный, у этого img нет id, а класс
+   тот же, что у круглых аватарок пользователя (rounded-full),
+   которые трогать НЕ нужно.
+   ========================================================================== */
+
+img[src*="/api/v1/models/model/profile/image"],
+img[src*="/api/v1/models/"][src*="/profile/image"] {
+  border-radius: 4px !important;
+  object-fit: contain !important;
+  background-color: var(--rzd-white) !important;
+  border: 1px solid var(--rzd-gray-light) !important;
+}
+
+/* Контейнер аватарки ассистента в сообщении тоже бывает с rounded-full
+   (овальная маска через overflow:hidden) — отменяем, чтобы не подрезал лого. */
+[id^="message-"] > div.shrink-0:has(img[src*="/api/v1/models/model/profile/image"]),
+[id^="message-"] > div.shrink-0:has(img[src*="/api/v1/models/"][src*="/profile/image"]) {
+  border-radius: 4px !important;
+  overflow: visible !important;
+}
