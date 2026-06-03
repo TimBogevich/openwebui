@@ -1,0 +1,8 @@
+FROM python:3.11-slim
+WORKDIR /app
+RUN pip install --no-cache-dir psycopg[binary]
+COPY gcu/watch_uploads.py .
+COPY gcu/parse_gtsu_excel.py .
+RUN pip install --no-cache-dir openpyxl
+ENV WATCH_DIR=/data/uploads
+CMD ["python", "watch_uploads.py", "/data/uploads"]

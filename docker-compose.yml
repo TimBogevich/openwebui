@@ -1,0 +1,97 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: gcu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gcu-mcp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.mcp
+    container_name: gcu-mcp
+    restart: unless-stopped
+    environment:
+      GCU_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
+    ports:
+      - "8808:8808"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  gcu-watch:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.watch
+    container_name: gcu-watch
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: postgres
+      ONLY_GCU: "1"
+      NO_MOVE: "1"
+    volumes:
+      - openwebui-data:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: gcu-openwebui
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    environment:
+      # LM Studio on host
+      OPENAI_API_BASE_URL: http://host.docker.internal:1234/v1
+      OPENAI_API_KEY: lm-studio
+      # Remote Qwen API (agentplatform)
+      OPENAI_API_BASE_URLS: >-
+        http://host.docker.internal:1234/v1;${REMOTE_API_BASE_URL}
+      OPENAI_API_KEYS: >-
+        lm-studio;${REMOTE_API_KEY}
+      # Branding
+      WEBUI_NAME: ГЦУ Ассистент
+      DEFAULT_LOCALE: ru-RU
+      # No auth (single-user internal deploy)
+      WEBUI_AUTH: "False"
+      WEBUI_AUTH_DISABLED: "true"
+      ENABLE_SIGNUP: "false"
+      # DB for GCU data passthrough (filter uses this)
+      GCU_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
+      # Clean UI
+      WEBUI_SHOW_ADMIN_DETAILS: "false"
+      ENABLE_COMMUNITY_SHARING: "false"
+      DEFAULT_PROMPT_SUGGESTIONS: "[]"
+    volumes:
+      - openwebui-data:/app/backend/data
+      # RZD branding
+      - ./static/custom.css:/app/backend/open_webui/static/custom.css
+      - ./static/loader.js:/app/backend/open_webui/static/loader.js
+      - ./static/rzd_logo.png:/app/backend/open_webui/static/favicon.png
+      - ./static/rzd_logo.png:/app/backend/open_webui/static/splash.png
+      - ./static/rzd_logo.png:/app/backend/open_webui/static/splash-dark.png
+    depends_on:
+      postgres:
+        condition: service_healthy
+      gcu-mcp:
+        condition: service_started
+
+volumes:
+  postgres-data:
+  openwebui-data:

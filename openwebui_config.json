@@ -1,0 +1,95 @@
+{
+  "_note": "Apply via Admin API: POST /api/v1/configs/tool_servers and POST /openai/config/update. See README.",
+  "model_presets": [
+    {
+      "id": "qwen/qwen3.6-27b",
+      "name": "ГЦУ Ассистент (Qwen 27B)",
+      "base_model_id": null,
+      "meta": {
+        "profile_image_url": "/static/favicon.png",
+        "description": "Локальная Qwen 27B через LM Studio",
+        "capabilities": {
+          "vision": false,
+          "citations": true,
+          "tool_calling": false,
+          "native_tool_calling": false
+        },
+        "toolIds": [],
+        "tool_ids": [
+          "gcu_db_query"
+        ],
+        "filterIds": [
+          "gcu_report_filter"
+        ]
+      },
+      "params": {
+        "max_tokens": 4096,
+        "temperature": 0.3
+      }
+    },
+    {
+      "id": "remote-qwen/qwen3.6-27b",
+      "name": "GCU Remote (Qwen 27B API)",
+      "base_model_id": "ap.qwen/qwen3.6-27b",
+      "meta": {
+        "profile_image_url": "/static/favicon.png",
+        "description": "Удалённая Qwen 27B (api.agentplatform.ru) с tool calling для запросов к БД ГЦУ",
+        "capabilities": {
+          "vision": false,
+          "citations": true,
+          "tool_calling": true,
+          "native_tool_calling": true
+        },
+        "toolIds": [
+          "server:mcp:gcu-postgres"
+        ],
+        "tool_ids": [
+          "gcu_db_query"
+        ],
+        "filterIds": []
+      },
+      "params": {
+        "max_tokens": 8192,
+        "temperature": 0.2,
+        "function_calling": "native"
+      }
+    },
+    {
+      "id": "qwen/qwen3.5-9b",
+      "name": "ГЦУ 9B (локальный)",
+      "base_model_id": null,
+      "meta": {
+        "profile_image_url": "",
+        "description": "ГЦУ Ассистент — локальная 9B модель (LM Studio)",
+        "capabilities": {
+          "vision": false,
+          "citations": true,
+          "tool_calling": false,
+          "native_tool_calling": false
+        },
+        "toolIds": [],
+        "filterIds": [
+          "gcu_report_filter"
+        ]
+      },
+      "params": {}
+    }
+  ],
+  "filter_function_id": "gcu_report_filter",
+  "tool_server_connections": [
+    {
+      "url": "http://localhost:8808/mcp",
+      "path": "mcp",
+      "type": "mcp",
+      "auth_type": "none",
+      "headers": null,
+      "config": {
+        "enable": true
+      },
+      "info": {
+        "id": "gcu-postgres",
+        "name": "GCU Postgres"
+      }
+    }
+  ]
+}
