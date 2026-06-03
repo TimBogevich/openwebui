@@ -1,13 +1,15 @@
 // РЖД branding loader for Open WebUI.
-// Replaces every "Open WebUI" occurrence with "РЖД" in title + DOM, live.
+// Replaces "Open WebUI" with "РЖД Интер" in title + DOM, live.
 (function () {
-  var FULL = "РЖД — Ассистент ГЦУ";
+  var FULL = "РЖД Интер";
   function scrub(t) {
     if (!t) return t;
     return t
       .replace(/ГЦУ Ассистент \(Open WebUI\)/gi, FULL)
-      .replace(/РЖД \(Open WebUI\)/gi, "РЖД")
-      .replace(/Open\s*WebUI/gi, "РЖД");
+      .replace(/РЖД Интер \(Open WebUI\)/gi, FULL)
+      .replace(/РЖД \(Open WebUI\)/gi, FULL)
+      .replace(/\(Open\s*WebUI\)/gi, "")
+      .replace(/Open\s*WebUI/gi, FULL);
   }
   function fixTitle() {
     if (/open\s*webui/i.test(document.title) || document.title !== FULL) {
@@ -32,5 +34,5 @@
     if (document.body) { mo.observe(document.body, { childList: true, subtree: true, characterData: true }); tick(); }
     else setTimeout(arm, 50);
   })();
-  setInterval(fixTitle, 1000);
+  setInterval(tick, 800);
 })();

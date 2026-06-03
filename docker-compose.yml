@@ -66,7 +66,7 @@ services:
       OPENAI_API_KEYS: >-
         lm-studio;${REMOTE_API_KEY}
       # Branding
-      WEBUI_NAME: РЖД
+      WEBUI_NAME: РЖД Интер
       DEFAULT_LOCALE: ru-RU
       # No auth, no login, no admin (single-user internal kiosk)
       WEBUI_AUTH: "False"
@@ -77,14 +77,34 @@ services:
       DEFAULT_PROMPT_SUGGESTIONS: "[]"
     volumes:
       - openwebui-data:/app/backend/data
-      # RZD branding
+      # ---- RZD branding ----
+      # The /static/ HTTP route is served from /app/build/static; some server-side
+      # refs use /app/backend/open_webui/static. Mount BOTH so every path is covered.
+      # custom.css + loader.js (referenced by build/index.html)
+      - ./static/custom.css:/app/build/static/custom.css
+      - ./static/loader.js:/app/build/static/loader.js
       - ./static/custom.css:/app/backend/open_webui/static/custom.css
       - ./static/loader.js:/app/backend/open_webui/static/loader.js
+      # favicon family (build/static = what the browser loads)
+      - ./static/rzd_logo.png:/app/build/static/favicon.png
+      - ./static/rzd_logo.png:/app/build/static/favicon.ico
+      - ./static/rzd_logo.png:/app/build/static/favicon-96x96.png
+      - ./static/rzd_logo.svg:/app/build/static/favicon.svg
+      - ./static/rzd_logo_dark.png:/app/build/static/favicon-dark.png
+      - ./static/rzd_logo.png:/app/build/static/apple-touch-icon.png
+      - ./static/rzd_logo.png:/app/build/static/web-app-manifest-192x192.png
+      - ./static/rzd_logo.png:/app/build/static/web-app-manifest-512x512.png
+      - ./static/rzd_logo.png:/app/build/static/logo.png
+      - ./static/rzd_splash.png:/app/build/static/splash.png
+      - ./static/rzd_logo_dark.png:/app/build/static/splash-dark.png
+      - ./static/rzd_user.png:/app/build/static/user.png
+      # mirror onto backend static too
       - ./static/rzd_logo.png:/app/backend/open_webui/static/favicon.png
-      - ./static/rzd_logo.png:/app/backend/open_webui/static/favicon.ico
+      - ./static/rzd_logo.svg:/app/backend/open_webui/static/favicon.svg
       - ./static/rzd_logo.png:/app/backend/open_webui/static/logo.png
       - ./static/rzd_splash.png:/app/backend/open_webui/static/splash.png
-      - ./static/rzd_splash.png:/app/backend/open_webui/static/splash-dark.png
+      - ./static/rzd_logo_dark.png:/app/backend/open_webui/static/splash-dark.png
+      - ./static/rzd_user.png:/app/backend/open_webui/static/user.png
     depends_on:
       postgres:
         condition: service_healthy
