@@ -8,9 +8,10 @@
 //  because the Svelte SPA re-renders the sidebar.
 // ============================================================
 (function () {
-  var FULL      = "РЖД Интер";
-  var WORD      = "ИНТЕР";
-  var LOGO_DARK = "/static/rzd_logo_dark.png"; // light-grey logo for dark sidebar
+  var FULL       = "РЖД Интер";
+  var WORD       = "ИНТЕР";
+  var LOGO_DARK  = "/static/rzd_logo_dark.png"; // light-grey logo for dark sidebar
+  var USER_LABEL = "Оператор";                  // footer name (replaces the duplicate brand)
 
   // Force the sidebar open before hydration.
   try { localStorage.setItem("sidebar", "true"); } catch (e) {}
@@ -74,20 +75,49 @@
     target.parentNode.insertBefore(brand, target);
   }
 
-  /* ---------- live-DB status dot in the footer ---------- *
-   * Appends a green dot next to the user/profile button so the
-   * footer reads as a clean profile row, not a mystery dot.    */
-  function liveDot() {
+  /* ---------- footer profile row ---------- *
+   * OWI's footer is the user-menu button: it renders the DB
+   * user.name + profile_image_url. We don't rely on a fragile
+   * aria-label — we locate the avatar <img> (the last image in
+   * the sidebar that isn't our own header glyph), then:
+   *   • tag its button with [data-rzd-footer] so CSS can style it
+   *   • drop a green "online" badge on the avatar (not loose)
+   *   • relabel the name IF it still duplicates the brand        */
+  function footerProfile() {
     var sb = document.getElementById("sidebar");
     if (!sb) return;
-    var menu =
-      sb.querySelector('[aria-label="User Menu"]') ||
-      sb.querySelector('button[id*="user"]');
-    if (!menu || menu.querySelector("#rzd-live")) return;
-    var dot = document.createElement("span");
-    dot.id = "rzd-live";
-    dot.title = "В сети · база подключена";
-    menu.appendChild(dot);
+
+    // avatar = last <img> in the sidebar that is NOT the header glyph
+    var imgs = [].slice.call(sb.querySelectorAll("img")).filter(function (im) {
+      return !im.closest("#rzd-brand");
+    });
+    if (!imgs.length) return;
+    var avatar = imgs[imgs.length - 1];
+
+    // the clickable footer container (button / anchor / row)
+    var btn = avatar.closest("button, a") || avatar.parentElement;
+    if (btn) btn.setAttribute("data-rzd-footer", "");
+
+    // green online badge, anchored to the avatar's wrapper
+    var wrap = avatar.parentElement;
+    if (wrap && !wrap.querySelector("#rzd-live")) {
+      wrap.style.position = wrap.style.position || "relative";
+      var dot = document.createElement("span");
+      dot.id = "rzd-live";
+      dot.title = "В сети · база подключена";
+      wrap.appendChild(dot);
+    }
+
+    // relabel the footer name only when it still echoes the brand
+    if (btn) {
+      var w = document.createTreeWalker(btn, NodeFilter.SHOW_TEXT, null);
+      var n;
+      while ((n = w.nextNode())) {
+        if (n.nodeValue && n.nodeValue.trim() === FULL) {
+          n.nodeValue = n.nodeValue.replace(FULL, USER_LABEL);
+        }
+      }
+    }
   }
 
   /* ---------- tick ---------- */
@@ -96,7 +126,7 @@
     if (document.body) {
       scrubDom(document.body);
       try { brandHeader(); } catch (e) {}
-      try { liveDot(); } catch (e) {}
+      try { footerProfile(); } catch (e) {}
     }
   }
 
