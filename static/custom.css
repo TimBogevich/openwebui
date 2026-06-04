@@ -177,6 +177,11 @@ img[src*="user"]{ object-fit:contain !important; }
 #rzd-topmark img{ height:22px !important; width:auto !important; opacity:.92 !important; }
 
 /* ===== 7. "Загрузить доклад" in the user menu (loader clones the Настройки row,
-   so it inherits OWI's native menuitem styling). Tiny safety only. ===== */
+   so it inherits OWI's native menuitem styling). Bold italic + file icon. ===== */
 #rzd-upload-item{ cursor:pointer !important; }
+#rzd-upload-item, #rzd-upload-item *{
+  font-weight:800 !important; font-style:italic !important;
+}
+#rzd-upload-item svg{ color:var(--rzd-red) !important; stroke:var(--rzd-red) !important; }
+
 
