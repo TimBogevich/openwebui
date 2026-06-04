@@ -10,8 +10,8 @@ COMMENT ON COLUMN gtsu_search.indicator IS 'Название ИМЕННО это
 COMMENT ON COLUMN gtsu_search.full_indicator IS 'parent_path + '' > '' + indicator. Используйте для поиска по теме (ILIKE), т.к. объединяет категорию и лист.';
 COMMENT ON COLUMN gtsu_search.unit IS 'Единица измерения.';
 COMMENT ON COLUMN gtsu_search.responsible IS 'Ответственное подразделение (ЦД, ЦТ, ЦФТО...).';
-COMMENT ON COLUMN gtsu_search.color_marker IS 'Зона: 2=красная, 1=жёлтая, 0=зелёная, NULL=без зоны.';
-COMMENT ON COLUMN gtsu_search.metrics IS 'JSONB с числами. Отклонения «к плану»/«к 2021» — доли: -0.0979 = -9.79%.';
+COMMENT ON COLUMN gtsu_search.color_marker IS 'Зона показателя (цвет в докладе): 2=КРАСНАЯ (критично), 1=ЖЁЛТАЯ (внимание), 0=ЗЕЛЁНАЯ (норма), 4=особая/информационная (без порога; справочные строки), NULL=без зоны. Для «красной зоны» фильтруй WHERE color_marker=2.';
+COMMENT ON COLUMN gtsu_search.metrics IS 'JSONB с числами. Ключи (используй ТОЧНО эти русские имена, англ. ключей НЕТ): факт_сутки, сутки_к_плану, сутки_к_2021, факт_месяц, месяц_к_плану, месяц_к_2021, факт_год, год_к_плану, год_к_2021. Для раздела III (инвест): ввод_фондов_* и инвест_затраты_* (план_периода, прогноз, утв_план_года, проц_к_плану_года, проц_к_плану_периода). Извлекай как (metrics->>''ключ'')::numeric со скобками. Отклонения *_к_плану и *_к_2021 — ДОЛИ (-0.0979 = -9.79%).';
 COMMENT ON COLUMN gtsu_search.text_comment IS 'Текстовый комментарий из доклада.';
 COMMENT ON COLUMN gtsu_search.management_actions IS 'Предлагаемые управленческие решения.';
 COMMENT ON COLUMN gtsu_search.narrative IS 'Человекочитаемый абзац (для полнотекстового поиска).';
