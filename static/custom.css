@@ -36,10 +36,38 @@ img[src*="user"]{ object-fit:contain !important; }
 #sidebar .sidebar{ background-color:transparent !important; }
 #sidebar svg{ color:var(--rzd-sb-muted) !important; }
 
-/* Hover + selected rows */
+/* Hover + selected rows.
+   OWI's chat rows reveal a light-grey/white action area (where the ⋯ / trash
+   buttons live) on hover — on the dark sidebar that flashes a white box with
+   invisible white text. We force EVERY light Tailwind bg inside the sidebar to
+   the dark hover grey, whether it's a :hover pseudo or an always-light child
+   that only becomes visible on hover. */
+#sidebar [class*="bg-white"],
+#sidebar [class*="bg-gray-50"],
+#sidebar [class*="bg-gray-100"],
+#sidebar [class*="bg-gray-200"],
+#sidebar [class*="hover:bg-white"],
+#sidebar [class*="hover:bg-gray"],
+#sidebar [class*="group-hover:bg"]{
+  background-color:transparent !important;
+  background-image:none !important;
+}
+/* The hovered row / button itself gets the dark grey tint */
 #sidebar a:hover,
 #sidebar button:hover,
-#sidebar [class*="hover:bg"]:hover{ background-color:var(--rzd-sb-hover) !important; }
+#sidebar li:hover,
+#sidebar [class*="hover:bg"]:hover,
+#sidebar .group:hover{
+  background-color:var(--rzd-sb-hover) !important;
+  background-image:none !important;
+}
+/* Keep text + icons light on hovered rows (never white-on-white) */
+#sidebar a:hover, #sidebar a:hover *,
+#sidebar button:hover, #sidebar button:hover *,
+#sidebar li:hover, #sidebar li:hover *,
+#sidebar .group:hover *{
+  color:var(--rzd-sb-text) !important;
+}
 #sidebar a:hover svg,
 #sidebar button:hover svg{ color:var(--rzd-sb-text) !important; }
 
