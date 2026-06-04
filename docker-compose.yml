@@ -98,6 +98,9 @@ services:
       - ./static/rzd_splash.png:/app/build/static/splash.png
       - ./static/rzd_logo_dark.png:/app/build/static/splash-dark.png
       - ./static/rzd_user.png:/app/build/static/user.png
+      # light-grey logo used by loader.js header glyph (referenced as /static/rzd_logo_dark.png)
+      - ./static/rzd_logo_dark.png:/app/build/static/rzd_logo_dark.png
+      - ./static/rzd_logo_dark.png:/app/backend/open_webui/static/rzd_logo_dark.png
       # mirror onto backend static too
       - ./static/rzd_logo.png:/app/backend/open_webui/static/favicon.png
       - ./static/rzd_logo.svg:/app/backend/open_webui/static/favicon.svg
