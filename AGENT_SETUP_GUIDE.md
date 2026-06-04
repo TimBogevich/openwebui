@@ -43,7 +43,7 @@ httpx.post(f"{BASE}/openai/config/update", headers=H, json={
     ],
     "OPENAI_API_KEYS": [
         "lm-studio",
-        "sk-ap-JpHr_qOj4a3I0VmfLUUtow",
+        "<REMOTE_API_KEY — set locally, not committed>",
     ],
     "OPENAI_API_CONFIGS": {
         "0": {"enable": True,  "prefix_id": "",   "model_ids": []},
