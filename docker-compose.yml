@@ -30,6 +30,25 @@ services:
       postgres:
         condition: service_healthy
 
+  gcu-upload:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.upload
+    container_name: gcu-upload
+    restart: unless-stopped
+    environment:
+      GCU_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: postgres
+    ports:
+      - "8810:8810"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   gcu-watch:
     build:
       context: .

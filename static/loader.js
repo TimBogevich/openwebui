@@ -129,12 +129,36 @@
     }
   }
 
+  /* ---------- sidebar link: "Загрузить доклад" ---------- *
+   * Adds a link in the sidebar that opens the standalone GCU uploader
+   * (port 8810 on the same host), in a new tab. The uploader writes straight
+   * to PostgreSQL and never touches the chat context.                        */
+  function uploadLink() {
+    var sb = document.getElementById("sidebar");
+    if (!sb || sb.querySelector("#rzd-upload-link")) return;
+    // anchor point: right after the branded header / new-chat area, near the top
+    var host = location.hostname || "localhost";
+    var a = document.createElement("a");
+    a.id = "rzd-upload-link";
+    a.href = location.protocol + "//" + host + ":8810/";
+    a.target = "_blank"; a.rel = "noopener";
+    a.innerHTML =
+      '<span class="rzd-up-ic" aria-hidden="true">⬆</span>' +
+      '<span class="rzd-up-tx">Загрузить доклад</span>';
+    // place it just under the header brand if present, else at sidebar top
+    var brand = sb.querySelector("#rzd-brand");
+    var anchorHost = (brand && brand.parentNode) ? brand.parentNode : sb;
+    if (brand && brand.nextSibling) anchorHost.insertBefore(a, brand.nextSibling);
+    else anchorHost.insertBefore(a, anchorHost.firstChild);
+  }
+
   /* ---------- tick ---------- */
   function tick() {
     fixTitle();
     if (document.body) {
       scrubDom(document.body);
       try { brandHeader(); } catch (e) {}
+      try { uploadLink(); } catch (e) {}
       try { footerProfile(); } catch (e) {}
     }
   }

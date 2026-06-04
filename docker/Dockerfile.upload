@@ -1,0 +1,9 @@
+FROM python:3.11-slim
+WORKDIR /app
+RUN pip install --no-cache-dir flask openpyxl "psycopg[binary]"
+COPY gcu/parse_gtsu_excel.py .
+COPY gcu/upload_server.py .
+# РЖД logo for the page header (optional; page degrades gracefully if missing)
+COPY static/rzd_logo_dark.png ./static/rzd_logo_dark.png
+EXPOSE 8810
+CMD ["python", "upload_server.py"]
