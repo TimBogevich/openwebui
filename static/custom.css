@@ -79,21 +79,33 @@ img[src*="user"]{ object-fit:contain !important; }
 }
 #sidebar input::placeholder{ color:var(--rzd-sb-faint) !important; }
 
-/* ===== 2. KILL the goofy white footer strip =============== *
- * OWI fades the chat list to a hard-coded white/transparent
- * gradient and the bottom user area inherits a light bg. Force
- * both to the sidebar grey so the panel reads as one surface.   */
-#sidebar .from-white,
+/* ===== 2. KILL every white strip / fade / overlay ========= *
+ * OWI uses hard-coded WHITE Tailwind gradients & light backgrounds in the
+ * sidebar: a top scroll-fade (bg-gradient-to-b + from-white), a bottom fade
+ * (bg-gradient-to-t), light from-gray-50 behind the chat-row action buttons,
+ * and group-hover:bg-white. On our dark sidebar these flash white. Force ALL
+ * of them to transparent / the sidebar grey so the panel is ONE surface.      */
 #sidebar [class*="from-white"],
+#sidebar [class*="via-white"],
+#sidebar [class*="to-white"],
+#sidebar [class*="from-gray-50"],
+#sidebar [class*="from-gray-100"],
 #sidebar [class*="bg-white"],
-#sidebar [class*="bg-gray-50"]{
+#sidebar [class*="bg-gray-50"],
+#sidebar [class*="bg-gray-100"],
+#sidebar [class*="group-hover:bg-white"]{
   background-color:transparent !important;
   background-image:none !important;
+  --tw-gradient-from:transparent !important;
+  --tw-gradient-via:transparent !important;
+  --tw-gradient-to:transparent !important;
 }
-/* the scroll-fade overlay above the footer -> fade to sidebar grey */
-#sidebar [class*="bg-gradient-to-t"]{
-  background-image:linear-gradient(to top,
-    var(--rzd-sb-bg) 0%, rgba(58,58,62,0) 100%) !important;
+/* both scroll-fade overlays (top -to-b, bottom -to-t) -> fade to sidebar grey */
+#sidebar [class*="bg-gradient-to-t"],
+#sidebar [class*="bg-gradient-to-b"],
+#sidebar [class*="bg-gradient"]{
+  background-image:none !important;
+  background-color:transparent !important;
 }
 
 /* ===== 3. Branded header (logo glyph + ИНТЕР) ============== *
