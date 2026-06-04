@@ -129,29 +129,54 @@
     }
   }
 
-  /* ---------- sidebar link: "Загрузить доклад" ---------- *
-   * Adds a link in the sidebar that opens the standalone GCU uploader
-   * (port 8810 on the same host), in a new tab. The uploader writes straight
-   * to PostgreSQL and never touches the chat context.                        */
-  function uploadLink() {
-    var sb = document.getElementById("sidebar");
-    if (!sb || sb.querySelector("#rzd-upload-link")) return;
-    // anchor: directly AFTER the "Новый чат" button, so it reads as the next nav row
-    var newChat = sb.querySelector("#sidebar-new-chat-button")
-               || sb.querySelector('[aria-label="New Chat"]')
-               || sb.querySelector('[id*="new-chat"]');
-    if (!newChat) return;                       // wait until it exists
+  /* ---------- "Загрузить доклад" in the user menu ---------- *
+   * The user-menu dropdown (Настройки / Архив чатов / … / Выход) only exists in
+   * the DOM while open. When it appears, we CLONE its "Настройки"/"Settings" row
+   * (so styling matches exactly), then swap the label + make it open the
+   * standalone uploader (:8810) in a new tab. Idempotent.                      */
+  function uploadMenuItem() {
+    // find an open menu by locating its "Настройки"/"Settings" row. Menu items
+    // often wrap the label in a nested span with an icon, so match by the
+    // trimmed text being EXACTLY the label OR containing it as the only words.
+    var items = document.querySelectorAll('[role="menuitem"], [data-melt-dropdown-menu-item], .dropdown-menu button, .dropdown-menu a');
+    if (!items.length) items = document.querySelectorAll('button, a');
+    var settingsRow = null;
+    for (var i = 0; i < items.length; i++) {
+      var t = (items[i].textContent || "").replace(/\s+/g, " ").trim();
+      if (t === "Настройки" || t === "Settings") {
+        var menu = items[i].closest('[role="menu"], [data-melt-dropdown-menu], .dropdown-menu, [id*="menu"]');
+        if (menu || items[i].getAttribute("role") === "menuitem" ||
+            items[i].hasAttribute("data-melt-dropdown-menu-item")) {
+          settingsRow = items[i]; break;
+        }
+      }
+    }
+    if (!settingsRow) return;
+    var container = settingsRow.parentNode;
+    if (!container || container.querySelector("#rzd-upload-item")) return;
+
+    var clone = settingsRow.cloneNode(true);
+    clone.id = "rzd-upload-item";
+    clone.removeAttribute("data-melt-dropdown-menu-item");
+    clone.removeAttribute("data-highlighted");
+    // relabel: first non-empty text node -> "Загрузить доклад", blank the rest
+    var w = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT, null), n, done = false;
+    while ((n = w.nextNode())) {
+      if (n.nodeValue && n.nodeValue.trim()) {
+        n.nodeValue = done ? "" : "Загрузить доклад";
+        done = true;
+      }
+    }
+    // open the uploader on the same host:8810 in a new tab
     var host = location.hostname || "localhost";
-    var a = document.createElement("a");
-    a.id = "rzd-upload-link";
-    a.href = location.protocol + "//" + host + ":8810/";
-    a.target = "_blank"; a.rel = "noopener";
-    a.innerHTML =
-      '<span class="rzd-up-ic" aria-hidden="true">⬆</span>' +
-      '<span class="rzd-up-tx">Загрузить доклад</span>';
-    // insert right after the new-chat button (as its sibling)
-    var ref = newChat.closest("a, button, div") || newChat;
-    if (ref.parentNode) ref.parentNode.insertBefore(a, ref.nextSibling);
+    var url = location.protocol + "//" + host + ":8810/";
+    clone.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      window.open(url, "_blank", "noopener");
+    }, true);
+    if (clone.tagName === "A") { clone.href = url; clone.target = "_blank"; }
+    // place it right after Настройки
+    container.insertBefore(clone, settingsRow.nextSibling);
   }
 
   /* ---------- tick ---------- */
@@ -160,7 +185,7 @@
     if (document.body) {
       scrubDom(document.body);
       try { brandHeader(); } catch (e) {}
-      try { uploadLink(); } catch (e) {}
+      try { uploadMenuItem(); } catch (e) {}
       try { footerProfile(); } catch (e) {}
     }
   }

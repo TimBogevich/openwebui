@@ -176,16 +176,7 @@ img[src*="user"]{ object-fit:contain !important; }
 }
 #rzd-topmark img{ height:22px !important; width:auto !important; opacity:.92 !important; }
 
-/* ===== 7. "Загрузить доклад" sidebar link (loader injects #rzd-upload-link) === */
-#rzd-upload-link{
-  display:flex !important; align-items:center !important; gap:9px !important;
-  margin:6px 10px 10px !important; padding:9px 12px !important;
-  background:var(--rzd-sb-input) !important;
-  border:1px solid var(--rzd-sb-line) !important; border-radius:9px !important;
-  color:var(--rzd-sb-text) !important; text-decoration:none !important;
-  font-size:13px !important; font-weight:600 !important;
-  transition:background-color .15s !important;
-}
-#rzd-upload-link:hover{ background:var(--rzd-red) !important; }
-#rzd-upload-link .rzd-up-ic{ font-size:15px !important; line-height:1 !important; }
-#rzd-upload-link, #rzd-upload-link *{ color:var(--rzd-sb-text) !important; }
+/* ===== 7. "Загрузить доклад" in the user menu (loader clones the Настройки row,
+   so it inherits OWI's native menuitem styling). Tiny safety only. ===== */
+#rzd-upload-item{ cursor:pointer !important; }
+
