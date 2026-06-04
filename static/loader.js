@@ -136,7 +136,11 @@
   function uploadLink() {
     var sb = document.getElementById("sidebar");
     if (!sb || sb.querySelector("#rzd-upload-link")) return;
-    // anchor point: right after the branded header / new-chat area, near the top
+    // anchor: directly AFTER the "Новый чат" button, so it reads as the next nav row
+    var newChat = sb.querySelector("#sidebar-new-chat-button")
+               || sb.querySelector('[aria-label="New Chat"]')
+               || sb.querySelector('[id*="new-chat"]');
+    if (!newChat) return;                       // wait until it exists
     var host = location.hostname || "localhost";
     var a = document.createElement("a");
     a.id = "rzd-upload-link";
@@ -145,11 +149,9 @@
     a.innerHTML =
       '<span class="rzd-up-ic" aria-hidden="true">⬆</span>' +
       '<span class="rzd-up-tx">Загрузить доклад</span>';
-    // place it just under the header brand if present, else at sidebar top
-    var brand = sb.querySelector("#rzd-brand");
-    var anchorHost = (brand && brand.parentNode) ? brand.parentNode : sb;
-    if (brand && brand.nextSibling) anchorHost.insertBefore(a, brand.nextSibling);
-    else anchorHost.insertBefore(a, anchorHost.firstChild);
+    // insert right after the new-chat button (as its sibling)
+    var ref = newChat.closest("a, button, div") || newChat;
+    if (ref.parentNode) ref.parentNode.insertBefore(a, ref.nextSibling);
   }
 
   /* ---------- tick ---------- */

@@ -197,11 +197,12 @@ PAGE = """<!doctype html>
   *{box-sizing:border-box}
   body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);
        color:var(--text);min-height:100vh;display:flex;align-items:flex-start;justify-content:center}
-  .wrap{width:100%;max-width:620px;padding:40px 24px}
-  .head{display:flex;align-items:center;gap:14px;margin-bottom:6px}
-  .head img{height:42px}
-  .head .word{font-weight:800;font-size:22px;letter-spacing:.12em;
-       border-left:1px solid var(--line);padding-left:13px}
+  .wrap{width:100%;max-width:560px;padding:48px 24px}
+  .head{display:flex;align-items:center;gap:14px;margin-bottom:28px;
+        padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .head img{height:40px;width:auto;flex:0 0 auto;object-fit:contain}
+  .head .word{font-weight:800;font-size:18px;letter-spacing:.14em;line-height:1;
+       border-left:1px solid var(--line);padding-left:14px;white-space:nowrap}
   h1{font-size:19px;font-weight:600;margin:22px 0 4px}
   .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
   .drop{border:2px dashed var(--line);border-radius:14px;background:var(--bg2);
