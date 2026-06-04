@@ -213,6 +213,82 @@ def query(sql: str) -> str:
     return _fmt_table(cols, rows)
 
 
+_WDAY_RU = ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"]
+_MON_RU = ["", "января", "февраля", "марта", "апреля", "мая", "июня",
+           "июля", "августа", "сентября", "октября", "ноября", "декабря"]
+
+
+@mcp.tool()
+def current_datetime(timezone: str = "Europe/Moscow") -> str:
+    """
+    Возвращает ТЕКУЩУЮ дату и время в указанном часовом поясе. Вызывай этот
+    инструмент для любых вопросов «какой сегодня день», «какое сегодня число»,
+    «сколько сейчас времени», «какой месяц/год сейчас». НЕ отвечай по памяти —
+    дата в твоих весах устарела.
+
+    :param timezone: имя зоны IANA (по умолчанию Europe/Moscow; напр. UTC, Asia/Yekaterinburg)
+    :return: дата и время по-русски
+    """
+    import datetime as dt
+    try:
+        from zoneinfo import ZoneInfo
+        now = dt.datetime.now(ZoneInfo(timezone))
+        tzname = timezone
+    except Exception:
+        now = dt.datetime.utcnow()
+        tzname = "UTC"
+    return (f"Сегодня {now.day} {_MON_RU[now.month]} {now.year} года, "
+            f"{_WDAY_RU[now.weekday()]}. Время: {now.strftime('%H:%M')} ({tzname}).")
+
+
+@mcp.tool()
+def weather(city: str = "Москва") -> str:
+    """
+    Возвращает текущую погоду в указанном городе (через open-meteo.com, без ключа).
+    Используй для вопросов о погоде. Если нет доступа к интернету — сообщи об этом.
+
+    :param city: название города (по умолчанию Москва)
+    :return: краткая сводка погоды по-русски
+    """
+    import json
+    import urllib.parse
+    import urllib.request
+
+    WMO = {
+        0: "ясно", 1: "преимущественно ясно", 2: "переменная облачность", 3: "пасмурно",
+        45: "туман", 48: "изморозь", 51: "лёгкая морось", 53: "морось", 55: "сильная морось",
+        61: "небольшой дождь", 63: "дождь", 65: "сильный дождь",
+        66: "ледяной дождь", 67: "сильный ледяной дождь",
+        71: "небольшой снег", 73: "снег", 75: "сильный снег", 77: "снежная крупа",
+        80: "ливень", 81: "сильный ливень", 82: "очень сильный ливень",
+        85: "снежный ливень", 86: "сильный снежный ливень",
+        95: "гроза", 96: "гроза с градом", 99: "сильная гроза с градом",
+    }
+
+    def _get(url):
+        req = urllib.request.Request(url, headers={"User-Agent": "gcu-mcp/1.0"})
+        with urllib.request.urlopen(req, timeout=12) as r:
+            return json.load(r)
+
+    try:
+        g = _get("https://geocoding-api.open-meteo.com/v1/search?name="
+                 + urllib.parse.quote(city) + "&count=1&language=ru")
+        if not g.get("results"):
+            return f"Город «{city}» не найден."
+        loc = g["results"][0]
+        lat, lon, nm = loc["latitude"], loc["longitude"], loc.get("name", city)
+        w = _get(f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
+                 "&current=temperature_2m,apparent_temperature,relative_humidity_2m,"
+                 "wind_speed_10m,weather_code")
+        c = w["current"]
+        desc = WMO.get(c.get("weather_code"), "")
+        return (f"Погода в г. {nm}: {desc}, {round(c['temperature_2m'])}°C "
+                f"(ощущается как {round(c['apparent_temperature'])}°C). "
+                f"Ветер {round(c['wind_speed_10m'])} м/с, влажность {c['relative_humidity_2m']}%.")
+    except Exception as e:
+        return f"Не удалось получить погоду для «{city}»: {str(e)[:120]}"
+
+
 if __name__ == "__main__":
     import uvicorn
     print("Starting GCU MCP server on http://0.0.0.0:8808/mcp (Streamable HTTP)")

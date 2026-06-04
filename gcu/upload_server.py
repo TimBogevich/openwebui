@@ -156,21 +156,6 @@ def upload():
             pass
 
 
-@app.route("/api/loaded", methods=["GET"])
-def loaded():
-    """List which report dates are already in the DB (for the page summary)."""
-    conn, _, _ = P.connect()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT count(DISTINCT report_date), min(report_date), max(report_date), count(*) "
-                        "FROM gtsu_search")
-            dates, dmin, dmax, total = cur.fetchone()
-        return jsonify(dates=dates, min=str(dmin) if dmin else None,
-                       max=str(dmax) if dmax else None, total=total)
-    finally:
-        conn.close()
-
-
 @app.route("/static/<path:fname>", methods=["GET"])
 def static_file(fname):
     safe = os.path.basename(fname)
@@ -205,10 +190,11 @@ PAGE = """<!doctype html>
        border-left:1px solid var(--line);padding-left:14px;white-space:nowrap}
   h1{font-size:19px;font-weight:600;margin:22px 0 4px}
   .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
-  .drop{border:2px dashed var(--line);border-radius:14px;background:var(--bg2);
-        padding:46px 20px;text-align:center;cursor:pointer;transition:.15s}
-  .drop.over{border-color:var(--rzd-red);background:#34343a}
-  .drop .big{font-size:15px;margin-bottom:6px}
+  .drop{border:1.5px dashed rgba(255,255,255,.22);border-radius:12px;background:transparent;
+        padding:30px 20px;text-align:center;cursor:pointer;transition:.15s;margin-top:8px}
+  .drop:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.03)}
+  .drop.over{border-color:var(--rzd-red);background:rgba(226,26,26,.07)}
+  .drop .big{font-size:14px;margin-bottom:5px;color:var(--text)}
   .drop .small{color:var(--muted);font-size:12px}
   input[type=file]{display:none}
   .msg{margin-top:20px;padding:14px 16px;border-radius:11px;font-size:14px;display:none;
@@ -248,13 +234,11 @@ PAGE = """<!doctype html>
   <div class="reload" id="reloadBox">
     <button id="reloadBtn">Загрузить повторно (перезаписать)</button>
   </div>
-
-  <div class="stat" id="stat"></div>
 </div>
 <script>
   var drop=document.getElementById('drop'), fileIn=document.getElementById('file'),
       msg=document.getElementById('msg'), msgt=document.getElementById('msgtext'),
-      msgd=document.getElementById('msgdetail'), stat=document.getElementById('stat'),
+      msgd=document.getElementById('msgdetail'),
       reloadBox=document.getElementById('reloadBox'), reloadBtn=document.getElementById('reloadBtn');
   var lastFile=null;
 
@@ -269,13 +253,8 @@ PAGE = """<!doctype html>
     msgt.innerHTML='<span class="spin"></span>Загрузка…'; msgd.textContent='';
     var fd=new FormData(); fd.append('file',file); if(force) fd.append('force','1');
     fetch('/api/upload',{method:'POST',body:fd}).then(function(r){return r.json()}).then(function(d){
-      show(d.status, d.message, d.detail); refreshStat();
+      show(d.status, d.message, d.detail);
     }).catch(function(e){ show('error','Ошибка сети при загрузке.', String(e)); });
-  }
-  function refreshStat(){
-    fetch('/api/loaded').then(function(r){return r.json()}).then(function(d){
-      if(d.dates) stat.textContent='В базе: '+d.total+' строк, '+d.dates+' дат ('+d.min+' … '+d.max+').';
-    }).catch(function(){});
   }
   drop.addEventListener('click',function(){fileIn.click()});
   fileIn.addEventListener('change',function(){ if(fileIn.files[0]) send(fileIn.files[0],false); });
@@ -285,7 +264,6 @@ PAGE = """<!doctype html>
     e.preventDefault(); drop.classList.remove('over');});});
   drop.addEventListener('drop',function(e){ var f=e.dataTransfer.files[0]; if(f) send(f,false); });
   reloadBtn.addEventListener('click',function(){ if(lastFile) send(lastFile,true); });
-  refreshStat();
 </script>
 </body></html>"""
 
