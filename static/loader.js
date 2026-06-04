@@ -73,6 +73,15 @@
 
     target.setAttribute("data-rzd-hide", "");
     target.parentNode.insertBefore(brand, target);
+
+    // Hide OWI's ORIGINAL header logo <img> (its favicon glyph, to the left of
+    // the app name) so we don't end up with TWO РЖД logos. Our #rzd-brand has
+    // its own logo, so any other header-zone <img> is the duplicate.
+    var sbTop2 = sb.getBoundingClientRect().top;
+    sb.querySelectorAll("img").forEach(function (im) {
+      if (im.closest("#rzd-brand")) return;            // keep our glyph
+      if ((im.getBoundingClientRect().top - sbTop2) < 110) im.style.display = "none";
+    });
   }
 
   /* ---------- footer profile row ---------- *

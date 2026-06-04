@@ -72,19 +72,22 @@ img[src*="user"]{ object-fit:contain !important; }
  * loader.js builds #rzd-brand and drops it into the sidebar
  * header; we just style it here.                                */
 #rzd-brand{
-  display:flex !important; align-items:center !important; gap:11px !important;
-  padding:2px 2px !important;
+  display:flex !important; align-items:center !important; gap:12px !important;
+  padding:2px 2px !important; margin-left:8px !important;   /* nudge right */
+  white-space:nowrap !important;
 }
 #rzd-brand img{
-  height:40px !important; width:auto !important; display:block !important;
-  filter:brightness(1.03) !important;
+  height:46px !important; width:auto !important; display:block !important;  /* bigger */
+  flex:0 0 auto !important;
+  filter:brightness(1.05) !important;
 }
 #rzd-brand .rzd-word{
-  font-weight:800 !important; font-size:23px !important;
+  font-weight:800 !important; font-size:24px !important;
   letter-spacing:.14em !important; line-height:1 !important;
+  white-space:nowrap !important;
   color:var(--rzd-sb-text) !important;
   border-left:1px solid var(--rzd-sb-line) !important;
-  padding-left:12px !important;
+  padding-left:13px !important;
 }
 /* hide OWI's original small "РЖД Интер" text node once branded */
 #sidebar [data-rzd-hide]{ display:none !important; }
