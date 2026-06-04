@@ -93,7 +93,6 @@ services:
       GCU_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
       # Clean UI
       ENABLE_COMMUNITY_SHARING: "false"
-      DEFAULT_PROMPT_SUGGESTIONS: "[]"
     volumes:
       - openwebui-data:/app/backend/data
       # ---- RZD branding ----
