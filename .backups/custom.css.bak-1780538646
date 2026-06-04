@@ -1,0 +1,32 @@
+/* ===== РЖД branding for Open WebUI ===== */
+
+/* Logos render cleanly (contain, no crop) */
+img[src*="favicon"],
+img[src*="splash"],
+img[src*="logo"],
+img[src*="user"] { object-fit: contain !important; }
+
+/* ---- Gray left sidebar (#sidebar confirmed in OWI 0.9.6 build) ---- */
+#sidebar {
+  background-color: #4a4a4e !important;
+  color: #f1f1f3 !important;
+}
+#sidebar * {
+  color: #f1f1f3 !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+#sidebar .sidebar { background-color: transparent !important; }
+
+/* Hover + selected rows a touch lighter */
+#sidebar a:hover,
+#sidebar button:hover,
+#sidebar [class*="hover:bg"]:hover {
+  background-color: #5c5c61 !important;
+}
+
+/* Search / inputs inside the sidebar */
+#sidebar input,
+#sidebar textarea {
+  background-color: #3f3f43 !important;
+  color: #f1f1f3 !important;
+}
