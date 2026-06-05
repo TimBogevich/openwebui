@@ -138,9 +138,22 @@ def describe(table: str = "") -> str:
                 cur.execute(f'SELECT count(*) FROM "{tbl}"')
                 n_rows = cur.fetchone()[0]
 
-                out = [f"Таблица: {tbl} — строк: {n_rows}"]
+                out = [f"Таблица/представление: {tbl} — строк: {n_rows}"]
                 if tbl_comment:
                     out.append(f"Описание: {tbl_comment}")
+                # Point the agent at the decoded views (discovered dynamically,
+                # not hardcoded into the prompt). Only when describing the base table.
+                if tbl == DEFAULT_TABLE:
+                    out.append("")
+                    out.append("ДОСТУПНЫЕ ПРЕДСТАВЛЕНИЯ (рекомендуется для запросов):")
+                    out.append("  • gtsu — декодированная витрина: типизированные колонки "
+                               "(факт_сутки, факт_месяц_нараст, факт_год_нараст), отклонения уже "
+                               "в процентах (откл_*_pct), зона текстом ('красная'/'жёлтая'/'зелёная'). "
+                               "Для ЧИСЛОВЫХ вопросов используй gtsu вместо разбора metrics JSONB. "
+                               "Схему смотри: describe('gtsu').")
+                    out.append("  • gtsu_catalog — справочник: какие показатели и какие разрезы "
+                               "(по дорогам/филиалам) реально есть. Смотри сюда, прежде чем "
+                               "утверждать, что разбивки нет.")
                 out.append("")
                 out.append("КОЛОНКИ (тип — комментарий):")
                 for name, dtype, comment in cols:
