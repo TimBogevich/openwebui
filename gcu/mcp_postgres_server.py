@@ -93,6 +93,43 @@ def _fmt_table(cols, rows, limit_rows=50):
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------------------
+# Dup-query guard — breaks the "re-run the SAME SELECT 4-6 times" loop that
+# caps out small MoE models (15/22 failures in the 40Q benchmark). Graduated:
+# the 3rd identical query gets a warning, the 4th+ is refused (data withheld)
+# so the model is forced to ANSWER from data it already has.
+#
+# State is a bounded ring buffer of recent normalized-query hashes — GLOBAL,
+# no TTL, but self-evicting (old queries fall out as new distinct ones arrive),
+# so it can never grow unbounded or stale-trigger on a long-idle hash.
+# ---------------------------------------------------------------------------
+import hashlib
+from collections import deque
+
+_QGUARD_WINDOW = 12          # how many recent queries we remember
+_QGUARD_WARN_AT = 2          # Nth identical (0-based prior count) -> warn
+_QGUARD_BLOCK_AT = 3         # Nth identical -> withhold data
+_recent_q = deque(maxlen=_QGUARD_WINDOW)   # holds normalized-sql md5 hashes
+
+
+def _qnorm(sql):
+    """Normalize SQL so cosmetic differences don't dodge the guard."""
+    return " ".join(sql.lower().strip().rstrip(";").split())
+
+
+def _qguard_check(sql):
+    """Return (level, prior_count). level: 0=ok, 1=warn, 2=block.
+    Records this query in the ring buffer as a side effect."""
+    h = hashlib.md5(_qnorm(sql).encode("utf-8")).hexdigest()
+    prior = _recent_q.count(h)
+    _recent_q.append(h)
+    if prior >= _QGUARD_BLOCK_AT:
+        return 2, prior
+    if prior >= _QGUARD_WARN_AT:
+        return 1, prior
+    return 0, prior
+
+
 @mcp.tool()
 def describe(table: str = "") -> str:
     """Возвращает структуру таблицы: колонки с типами и комментариями,
@@ -163,6 +200,25 @@ def describe(table: str = "") -> str:
                                    "через ILIKE часто промахивается. Ищи по СМЫСЛУ через триграммное "
                                    "сходство: WHERE name % 'твой запрос'  или  "
                                    "ORDER BY similarity(name, 'твой запрос') DESC LIMIT 5.")
+                        out.append("")
+                        out.append("СПРАВКИ-ИСТОЧНИКИ (детализация к докладу ГЦУ) — связаны с reports по report_date:")
+                        out.append("  • spravki_delays       — задержанные поезда по кодам причин и дорогам "
+                                   "(коды 0,1,2,4,5,6,21,22,24,43,44,92; поля: delay_code, delay_name, road_code, trains, wagons). "
+                                   "Используй для вопросов о задержках по кодам/дорогам.")
+                        out.append("  • spravki_failures     — отказы техсредств 1-2 кат. по подразделениям "
+                                   "(поля: dept, failures_2025, failures_2026, change_pct, resolved). "
+                                   "Используй для вопросов об отказах техсредств по подразделениям.")
+                        out.append("  • spravki_locomotives  — эксплуатируемый парк локомотивов "
+                                   "(поля: section, polygon, road, plan, fact, delta). "
+                                   "Используй для вопросов о локомотивном парке.")
+                        out.append("  • spravki_port_stations— работа припортовых станций ДВС/ОКТ/СКАВ "
+                                   "(поля: road, station, load_plan, load_fact, detained_trains, wagons_total). "
+                                   "Используй для вопросов о портах и отставленных поездах на припортовых станциях.")
+                        out.append("  • spravki_speed        — участковая и техническая скорость по дорогам "
+                                   "(поля: speed_type ['section'|'technical'], road, norm, day_fact, day_delta, month_fact). "
+                                   "Используй для вопросов о скорости по дорогам.")
+                        out.append("  Даты покрытия справок: "
+                                   "SELECT DISTINCT report_date FROM spravki_delays ORDER BY report_date")
                     except Exception:
                         conn.rollback()
                 out.append("")
@@ -221,11 +277,24 @@ def query(sql: str) -> str:
     :param sql: SQL SELECT/WITH (только чтение)
     :return: результат в текстовом виде
     """
+    # Anti-loop guard: catch the same SELECT being re-run instead of answering.
+    level, prior = _qguard_check(sql)
+    if level == 2:
+        return ("⛔ СТОП: этот запрос уже выполнялся "
+                f"{prior + 1} раз(а) с тем же результатом. Данные не изменятся. "
+                "НЕ повторяй запрос — сформулируй ОТВЕТ на основе уже полученных "
+                "данных. Если данных действительно не хватает, честно скажи, "
+                "каких именно, и не зацикливайся.")
+
     result, err = _run_select(sql)
     if err:
         return err
     cols, rows = result
-    return _fmt_table(cols, rows)
+    out = _fmt_table(cols, rows)
+    if level == 1:
+        out = ("⚠️ Внимание: ты уже выполнял ЭТОТ ЖЕ запрос — результат тот же. "
+               "Переходи к ОТВЕТУ или измени запрос, не повторяй его снова.\n\n" + out)
+    return out
 
 
 _WDAY_RU = ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"]
