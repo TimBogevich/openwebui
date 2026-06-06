@@ -3,8 +3,8 @@
 Auto-parse-on-upload watcher for ГЦУ Excel reports.
 
 Watches a folder; whenever a new/changed .xlsx appears, it runs the parser
-(parse_gtsu_excel.py) to ingest it into the local PostgreSQL `gtsu_search`
-table. So "attach the Excel → it auto-loads into the DB the assistant queries".
+(parse_gtsu_v2.py) to ingest it into the local PostgreSQL (reports / metrics /
+investment_metrics / report_comments). So "attach the Excel → it auto-loads into the DB the assistant queries".
 
 No external deps (pure stdlib polling) — works alongside the Open WebUI venv.
 
@@ -48,7 +48,7 @@ if sys.platform == "win32":
         pass
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PARSER = os.path.join(HERE, "parse_gtsu_excel.py")
+PARSER = os.path.join(HERE, "parse_gtsu_v2.py")
 WATCH_DIR = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "gcu_inbox")
 DONE_DIR = os.path.join(WATCH_DIR, "_done")
 FAIL_DIR = os.path.join(WATCH_DIR, "_failed")

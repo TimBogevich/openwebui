@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 """
 GCU report uploader — standalone web page that ingests a ГЦУ .xlsx straight into
-PostgreSQL (table gtsu_search), completely separate from the chat so a 140k-char
+PostgreSQL via parse_gtsu_v2.ingest_one(). Separate from the chat so a 140k-char
 report never pollutes the model context.
 
-Flow: drag/drop .xlsx -> validate format -> check if that report_date is already
-loaded -> parse into PG -> return one of three statuses:
+Flow: drag/drop .xlsx → validate format → call parse_gtsu_v2.ingest_one():
   • red    — неверный формат файла
-  • yellow — файл уже был загружен (дата уже в базе)
-  • green  — файл загружен (N строк за <дата>)
+  • yellow — файл уже был загружен (тот же sha256)
+  • green  — файл загружен (R/Y/G счётчики за <дата>)
 
-Reuses parse_gtsu_excel.py (same logic as gcu-watch). Serves on :8810.
+Serves on :8810.
 """
 import os
 import io
@@ -25,104 +24,86 @@ if sys.platform == "win32":
 
 from flask import Flask, request, jsonify, Response
 
-import parse_gtsu_excel as P
+import parse_gtsu_v2 as P
 
 app = Flask(__name__)
 
 BRAND = "РЖД Интер"
 
-
-def _date_already_loaded(report_date):
-    """Return current row-count for report_date (0 if not loaded)."""
-    conn, _, _ = P.connect()
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT count(*) FROM gtsu_search WHERE report_date = %s",
-                (report_date,),
-            )
-            return cur.fetchone()[0]
-    finally:
-        conn.close()
+# sheet names the new parser recognizes (used only for the format gate)
+KNOWN_SHEETS = {name for (name, *_rest) in P.SHEET_HANDLERS}
 
 
-def _ingest(path, original_name):
-    """Parse the xlsx at `path` into PG. Returns (status, message, detail)."""
-    # 1) format gate — must be .xlsx and openpyxl-loadable with ≥1 GCU sheet
+def _ingest(path, original_name, force=False):
+    """Run parse_gtsu_v2 on the xlsx. Returns (status, message, detail)."""
     if not original_name.lower().endswith(".xlsx"):
         return ("error", "Невозможно загрузить: неверный формат файла (нужен .xlsx).", "")
+
+    # format gate — must contain at least one known ГЦУ sheet
     try:
         import openpyxl
         wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
         sheetnames = set(wb.sheetnames)
         wb.close()
     except Exception as e:
-        return ("error", "Невозможно загрузить: файл повреждён или не является Excel.", str(e)[:200])
-
-    known = {name for (name, *_rest) in P.SHEETS}
-    if not (sheetnames & known):
+        return ("error", "Невозможно загрузить: файл повреждён или не является Excel.",
+                str(e)[:200])
+    if not (sheetnames & KNOWN_SHEETS):
         return ("error",
                 "Невозможно загрузить: это не доклад ГЦУ (нет ожидаемых листов).",
                 "Листы: " + ", ".join(list(sheetnames)[:6]))
 
-    # 2) infer report date the same way the parser/watcher does
+    # date is inferred from the ORIGINAL filename, not the temp path
     report_date = P.infer_date(original_name, None)
 
-    # 3) duplicate check
-    existing = _date_already_loaded(report_date)
-    if existing > 0:
-        return ("warn",
-                f"Файл уже был загружен: доклад за {report_date.strftime('%d.%m.%Y')} "
-                f"уже в базе ({existing} строк).",
-                "Повторная загрузка перезапишет эти строки — используйте «Загрузить повторно».")
+    conn = P.connect()
+    try:
+        # check existing report for the date BEFORE ingest_one (so we can return
+        # a 'warn' for the duplicate-gate case)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT count(*) FROM reports WHERE report_date = %s",
+                (report_date,),
+            )
+            existing_count = cur.fetchone()[0]
 
-    # 4) parse + load (parse_gtsu_excel.main reads argv; call its pieces directly)
-    rows = _parse_rows(path, report_date)
-    if not rows:
-        return ("error", "Невозможно загрузить: не удалось разобрать данные доклада.", "")
-    n = _write_rows(rows, report_date)
-    return ("ok",
-            f"Файл загружен в базу: {n} строк за {report_date.strftime('%d.%m.%Y')}.",
-            f"Источник: {original_name}")
+        if existing_count and not force:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT metrics_count, red_count, yellow_count, green_count "
+                    "FROM reports WHERE report_date = %s ORDER BY created_at DESC LIMIT 1",
+                    (report_date,),
+                )
+                row = cur.fetchone()
+            mc, rc, yc, gc = (row or (None, None, None, None))
+            return ("warn",
+                    f"Файл уже был загружен: доклад за {report_date.strftime('%d.%m.%Y')} "
+                    f"уже в базе ({mc} показателей; красная={rc}, жёлтая={yc}, "
+                    f"зелёная={gc}).",
+                    "Повторная загрузка перезапишет эти строки — используйте «Загрузить повторно».")
 
+        # honest ingest via the new parser. ingest_one is idempotent by sha256,
+        # and with force=True it deletes the prior report for this date first.
+        report_id = P.ingest_one(conn, path, force=force, override_date=report_date.isoformat())
+        if not report_id:
+            return ("error",
+                    "Невозможно загрузить: не удалось разобрать данные доклада.", "")
 
-def _parse_rows(xlsx, report_date):
-    import openpyxl
-    wb = openpyxl.load_workbook(xlsx, data_only=True)
-    rows = []
-    for name, code, title, kind, hr, ds, fl in P.SHEETS:
-        if name not in wb.sheetnames:
-            continue
-        if kind == "I_II":
-            rows += P.parse_section_I_II(wb[name], code, title, name, hr, ds, report_date)
-        else:
-            rows += P.parse_section_III(wb[name], code, title, name, hr, ds, fl, report_date)
-    return rows
-
-
-def _write_rows(rows, report_date):
-    conn, Json, drv = P.connect()
-    conn.autocommit = False
-    cur = conn.cursor()
-    cur.execute(P.DDL)
-    cur.execute("DELETE FROM gtsu_search WHERE report_date = %s", (report_date,))
-    sql = """INSERT INTO gtsu_search
-      (report_date, section_code, section_title, sheet_name, item_number, item_depth,
-       parent_path, indicator, full_indicator, unit, responsible, color_marker,
-       metrics, text_comment, management_actions, narrative, source_row)
-      VALUES (%(report_date)s,%(section_code)s,%(section_title)s,%(sheet_name)s,
-              %(item_number)s,%(item_depth)s,%(parent_path)s,%(indicator)s,
-              %(full_indicator)s,%(unit)s,%(responsible)s,%(color_marker)s,
-              %(metrics)s,%(text_comment)s,%(management_actions)s,%(narrative)s,
-              %(source_row)s)"""
-    for r in rows:
-        r["metrics"] = Json(r["metrics"])
-        cur.execute(sql, r)
-    conn.commit()
-    cur.execute("SELECT count(*) FROM gtsu_search WHERE report_date=%s", (report_date,))
-    n = cur.fetchone()[0]
-    conn.close()
-    return n
+        # pull the row-count summary that just landed
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT metrics_count, red_count, yellow_count, green_count "
+                "FROM reports WHERE id = %s",
+                (report_id,),
+            )
+            mc, rc, yc, gc = cur.fetchone()
+        return ("ok",
+                f"Файл загружен в базу: {mc} показателей за "
+                f"{report_date.strftime('%d.%m.%Y')} "
+                f"(красная={rc}, жёлтая={yc}, зелёная={gc}).",
+                f"Источник: {original_name}")
+    finally:
+        conn.close()
 
 
 @app.route("/api/upload", methods=["POST"])
@@ -135,17 +116,7 @@ def upload():
         f.save(tmp.name)
         tmp_path = tmp.name
     try:
-        if force:
-            # bypass the duplicate gate: parse + overwrite
-            rd = P.infer_date(f.filename, None)
-            rows = _parse_rows(tmp_path, rd)
-            if not rows:
-                return jsonify(status="error", message="Не удалось разобрать данные доклада.")
-            n = _write_rows(rows, rd)
-            return jsonify(status="ok",
-                           message=f"Файл перезагружен: {n} строк за {rd.strftime('%d.%m.%Y')}.",
-                           detail=f"Источник: {f.filename}")
-        status, message, detail = _ingest(tmp_path, f.filename)
+        status, message, detail = _ingest(tmp_path, f.filename, force=force)
         return jsonify(status=status, message=message, detail=detail)
     except Exception as e:
         return jsonify(status="error", message="Ошибка при загрузке.", detail=str(e)[:300])

@@ -10,7 +10,7 @@
 
 | Container | Port | Role |
 |---|---|---|
-| `gcu-postgres` | 5432 (internal) | postgres:16, volume `postgres-data`. Holds `gtsu_search` (21912 rows, 31 March-2022 dates) + views + dicts |
+| `gcu-postgres` | **5433 → 5432** | `pgvector/pgvector:pg16`, volume `postgres-data`. Holds the typed-column schema: `reports` (61 days = 31 March 2022 + 30 April 2026), `metrics` (20,056), `investment_metrics` (10,033), `report_comments` (15,395), `dept_codes` (143), `kb_chunks` (1,892), `report_sheets`, `audit_log`. **DBeaver:** host 127.0.0.1 port **5433** (the host's own Postgres holds 5432). |
 | `gcu-mcp` | 8808 | MCP server (`gcu/mcp_postgres_server.py`), 4 tools. Built w/ host-header patch (Dockerfile.mcp) |
 | `gcu-openwebui` | 3000 | ghcr.io/open-webui/open-webui:main. Config in container `webui.db` (SQLite) |
 | `gcu-upload` | 8810 | Standalone xlsx→PG uploader (`gcu/upload_server.py`), Flask |
@@ -21,42 +21,51 @@
 
 ---
 
-## 2. The DATA model (gtsu_search) — semantics that matter
+## 2. The DATA model (typed schema v2) — semantics that matter
 
-Flat table, one row per (date × indicator-leaf). Key columns:
-- `report_date`, `section_code` (I/II/III-forecast), `item_number` ("1.1.7"), `item_depth` (1=раздел, 3=лист)
-- `parent_path` = тема/категория (e.g. "1. СКОРОСТЬ ДОСТАВКИ…"); `indicator` = лист (often the OBJECT: дорога name); `full_indicator` = parent>indicator
-- `responsible` = dept code (ЦД, ЦТ, ЦФТО…) — **NOT** the road
-- `color_marker`: **2=КРАСНАЯ, 1=ЖЁЛТАЯ, 0=ЗЕЛЁНАЯ, 4=особая/информац., NULL=нет**
-- `metrics` JSONB — **Russian keys only**: `факт_сутки, сутки_к_плану, сутки_к_2021, факт_месяц, месяц_к_плану, месяц_к_2021, факт_год, год_к_плану, год_к_2021` + invest keys `ввод_фондов_*`, `инвест_затраты_*`
-- **Отклонения = доли** (-0.0979 = -9.79%). **факт_месяц/факт_год = нарастающим итогом** (for rates like км/сут this is a running AVERAGE-to-date, NOT a sum — never multiply by days)
+Rebuilt 2026-06-06 from the JSONB prototype. **Schema is `db/schema_v2.sql`** (idempotent;
+re-applies cleanly). Parser is **`gcu/parse_gtsu_v2.py`** (writes typed columns, sha256
+dedup, idempotent per file).
 
-**Hierarchy gotcha (A1):** per-road breakdown = CHILD rows; `indicator`=road, тема in `parent_path`. Search by `full_indicator ILIKE`, NOT `indicator` alone (which only matches the zero aggregate-placeholder).
+**Tables (FK chain: `reports.id ← report_sheets.report_id ← metrics/investment_metrics/report_comments`):**
+
+- **`reports`** — one row per xlsx file. Columns: `report_date`, `sha256` (UNIQUE), `baseline_year` (2021 for March 2022, 2025 for April 2026 — for the `*_to_prev_year` columns), `metrics_count`, `red_count`, `yellow_count`, `green_count`, `status`.
+- **`metrics`** — operational indicators (sheets «Доклад Ц ЦЗ» + «Срок доставки»). **All numbers in typed `float8` columns — no JSONB casting.**
+  - `indicator_number` ("1.1.7"), `parent_indicator` ("1.1"), `section_roman`, `category`, `name`, `unit`
+  - `responsible` (ЦД/ЦТ/ЦФТО/…), `road` (Октябрьская/Дальневосточная/… — null for non-road rows; indexed)
+  - `zone` smallint **0=зелёная / 1=жёлтая / 2=красная / 4=особая** (CHECK constraint)
+  - 9 numeric: `day_fact, day_to_plan, day_to_prev_year`, `month_*`, `year_*`. **Deviations are FRACTIONS (-0.0979 = -9.79%).** `*_fact` for month/year are нарастающим итогом — running totals (rates → averages-to-date, never sum).
+  - `cell_ref` ("B14") for source traceability
+  - Partial index `idx_metrics_problem (report_id, zone) WHERE zone IN (1,2)` → fast "red+yellow on date X"; russian FTS on `name`.
+- **`investment_metrics`** — sheets «Инвест» + «Инвест Факт» (different shape, separate table). `code_spiui`, `program`, `is_forecast` bool, then expenses (`exp_approved_year`, `exp_period_plan`, `exp_fact_or_forecast`, `exp_pct_to_period`, `exp_pct_to_year`) and funds-commissioning (`funds_*`).
+- **`report_comments`** — text commentary + management actions, separated from metrics so one indicator can have multiple comment rows. Russian FTS index over commentary+management_action.
+- **`dept_codes`** (143 rows) — code↔name dictionary (ЦБС→Бухгалтерская служба). JOIN `metrics.responsible = dept_codes.code` (some codes have no dictionary entry; that's expected, no hallucination).
+- **`kb_chunks`** (1,892 rows) — knowledge-base vectors (see §11).
 
 ---
 
-## 3. DB views & dicts (the "decode layer") — `db/setup_db.sql` (idempotent, run after dump)
+## 3. Schema management
 
-These live in the postgres VOLUME — **re-apply after any volume rebuild**:
-```bash
-docker exec -i gcu-postgres psql -U postgres -d postgres < db/gtsu_search_dump.sql   # 21912 rows
-docker exec -i gcu-postgres psql -U postgres -d postgres < db/setup_db.sql           # comments+views+dept_codes
-```
-- **`gtsu`** view: typed columns (`факт_сутки`, `факт_месяц_нараст`, `факт_год_нараст`), отклонения already `%` (`откл_*_pct`), `зона` as text. Use for NUMERIC questions instead of raw JSONB. **NOT a precomputed answer** — Postgres runs it live each query; auto-covers new daily uploads.
-- **`gtsu_catalog`** view: distinct indicator/breakdown rows — "what разрезы exist".
-- **`dept_codes`** table (143 rows): code↔name dict (ЦБС→Бухгалтерская служба). Agent JOINs on demand; 28/39 DB codes covered, 11 gaps left as bare codes (no hallucination). Source: `db/dept_codes.sql`.
-- **Column comments** (`db/seed_comments.sql`): surfaced by `describe`, carry the semantics above.
-
-**CRITICAL fact-check that corrected the external review:** the doc's `WHERE full_indicator NOT ILIKE '%Доработка системы-источника%'` junk-filter would DELETE 496 REAL per-road speed rows. Only the 31 depth<3 parent aggregates are empty. **The gtsu view does NOT filter by that name.**
+- **`db/schema_v2.sql`** — apply with `docker exec -i gcu-postgres psql -U postgres -d postgres < db/schema_v2.sql`. Idempotent (CREATE IF NOT EXISTS / OR REPLACE everywhere).
+- **`db/dept_codes.sql`** — seed for the 143-row dictionary.
+- **No views needed** — the typed columns are queryable directly. The old `gtsu`/`gtsu_catalog`/`gtsu_totals` views are gone (they existed to paper over the JSONB).
+- **Bulk reload from the desktop folders:**
+  ```bash
+  docker cp "C:/Users/Iskandar/Desktop/март 22 — копия" gcu-watch:/tmp/march
+  docker cp "C:/Users/Iskandar/Desktop/апрель 2026" gcu-watch:/tmp/april
+  docker exec gcu-watch python /app/parse_gtsu_v2.py /tmp/march
+  docker exec gcu-watch python /app/parse_gtsu_v2.py /tmp/april
+  ```
 
 ---
 
 ## 4. MCP tools (`gcu/mcp_postgres_server.py`, port 8808)
 
-- **`describe(table='')`** — live schema introspection: columns+types+comments, ranges, low-cardinality value lists, JSONB keys, real samples. Advertises the `gtsu`/`gtsu_catalog`/`dept_codes` relations (dynamic, not hardcoded). Call FIRST / when 0 rows.
+- **`describe(table='')`** — live schema introspection: columns+types+comments (from the DB), ranges, low-cardinality value lists, real samples. Defaults to `metrics`. Other public-schema tables are listed by name only. Tool docstrings + the `describe` output are intentionally schema-only — **no example SQL, no dates, no prescriptive guidance** (those used to live there and biased the model; removed 2026-06-06).
 - **`query(sql)`** — read-only SELECT/WITH. `_run_select` blocks INSERT/UPDATE/etc.
 - **`current_datetime(timezone='Europe/Moscow')`** — fixes the hallucinated date (zoneinfo). 
 - **`weather(city='Москва')`** — Open-Meteo (no key; wttr.in timed out, replaced).
+- **`search_knowledge(query, k=4, collection='')`** — RAG over the railway literature (see §11). Model calls it ON DEMAND for normative/theory questions; numbers still go to `query`. Returns cited passages (ПТЭ verbatim). collection: ''=all, 'pte', 'textbooks'.
 
 OWI tool name presented to model = `gcu-postgres_query` etc. Rebuild after edits: `docker compose up -d --build gcu-mcp`.
 
@@ -123,4 +132,163 @@ OWI tool name presented to model = `gcu-postgres_query` etc. Rebuild after edits
 - DB datetime gotcha: `config` table uses DATETIME strings; writing int epoch to `config.updated_at` crash-loops OWI. `model`/`function` tables use int epoch.
 
 ---
-*Generated end of 2026-06-05 session. Full architecture also in memory file gcu-assistant-architecture.md.*
+
+## 11. Knowledge Base (RAG over railway literature) — added 2026-06-05
+
+**What:** the assistant can answer normative/theory questions from a library of railway
+literature (ПТЭ + appendices + textbooks) with source citations — separate from the
+structured ГЦУ data. The model calls `search_knowledge` ON DEMAND (not auto-attached →
+no context bloat); ГЦУ-number questions still route to `query`. **Validated end-to-end:**
+"красная зона 5 апреля"→`query`→51 (correct); "обязанности по ПТЭ"→`search_knowledge`→
+cited ПТЭ разд.II п.5/п.7 verbatim.
+
+**Pipeline (3 scripts + schema):**
+1. `gcu/prepare_kb.py` — **Stage-0 prep.** Reads PDFs/DOCX (`Лит-ра для ИИ`), denoises
+   (strips page numbers, repairs hyphenation), segments on REAL structure (ПТЭ: Roman
+   разд. + numbered clauses; textbooks: dotted/ALL-CAPS headings), emits curated markdown
+   "context-forms" with breadcrumbs + citations → `kb_out/{pte,textbooks}/*.md`.
+   **ПТЭ = VERBATIM** (is_verbatim=true); textbooks cleaned + 1-line «О чём:» prefix.
+   No-loss fallback emits whole-doc segment if no structure found. 47 files → 1682 segments.
+2. `db/kb_schema.sql` — `kb_chunks` table: `vector(1024)` + HNSW(cosine) + russian FTS `tsv`.
+   Needs **pgvector** image (see below).
+3. `gcu/embed_kb.py` — embeds curated chunks via LM Studio → `kb_chunks`. Idempotent per
+   source_file. **e5-large-INSTRUCT convention: passages BARE (`--no-prefix`)**, query gets
+   the Instruct wrapper (in the MCP tool). 676 pte + 1006 textbooks = 1682 rows.
+4. `search_knowledge` tool in `mcp_postgres_server.py` — embeds query (Instruct prefix),
+   **hybrid retrieval = vector + russian FTS fused by RRF** (1/(60+rank)), returns top-k
+   cited passages. Hybrid RRF was VERIFIED to route to the right doc/section (pure vector
+   alone was imprecise — scores clustered 0.84–0.87).
+
+**Embedder:** `text-embedding-multilingual-e5-large-instruct` in LM Studio (1024d). Prefix
+test (margin right−wrong): Instruct-query+bare-passage = **0.133** (best) > query:/passage:
+0.112 > none 0.094. The query-side prefix lives in `KB_QUERY_INSTRUCT` in the MCP server —
+**must match** the passage-side convention in embed_kb.py for the SAME model.
+
+**pgvector swap:** `postgres:16` → `pgvector/pgvector:pg16` (docker-compose). Data-safe
+(same PG16, volume kept — verified 22264 rows survived). One gotcha: collation-version
+warning after swap → `ALTER DATABASE postgres REFRESH COLLATION VERSION;` (done).
+
+**Ops / re-runs:**
+```bash
+# prepare (offline, no model): in a container with pypdf
+python gcu/prepare_kb.py <Лит-ра dir> --out kb_out
+# embed (needs e5 loaded in LM Studio; UNLOAD the MoE first if VRAM tight):
+python gcu/embed_kb.py kb_out --model text-embedding-multilingual-e5-large-instruct --dim 1024 --no-prefix
+# rebuild tool: docker compose up -d --build gcu-mcp
+```
+**OOM note:** MoE (15.5 GB) + e5 (1 GB) co-loaded fits 24 GB. For a big re-embed, unload MoE.
+**Known imperfections:** some textbook PDFs have in-word OCR spaces (`корреспонд ируют`) —
+left as-is (de-spacing risks gluing real words); doesn't break hybrid retrieval. 3 ЕСТП
+TOC/body duplicate chunks (harmless). Corpus gaps exist (e.g. no clean «участковая
+скорость» definition) — that's missing source content, not a retrieval bug.
+
+**Curated corpus** lives in `kb_out/` (7.5 MB, commit it — the real asset). Source PDFs
+(`Лит-ра для ИИ`, 103 MB) need NOT be committed.
+
+**Tuning applied 2026-06-05 (after first live tests):**
+- **Context-lean retrieval:** `search_knowledge` default **k=3** (max 6), each returned
+  chunk capped at **KB_SNIPPET_CHARS=600** (was 1100), whitespace folded. One search now
+  ≈300 tokens (was ~4-5K). Reason: a multi-search question once ate the whole 4K window.
+- **`reference` collection (curated справки) with ranking BOOST:** small authoritative docs
+  embedded as `collection='reference'`, tagged `[СПРАВКА (курируемая)]`, get +0.010 RRF so
+  they outrank general textbook chunks. First member: **`Срок доставки (факторы).docx`** (8
+  factor-groups) — now the top hit for «причины/факторы отставания поездов». Prep it with
+  `prepare_kb.py <file> --collection reference` (single-int «N. Заголовок» segmenter).
+- **KB routing directive** (`db/kb_directive.py`): adds a «БАЗА ЗНАНИЙ» block to every active
+  preset's system prompt telling the model to call `search_knowledge` for normative/theory/
+  ПРИЧИНЫ questions (it was answering causes from gtsu SQL comments and never searching).
+  Verified: the причины-отставания question now routes to the KB and cites the факторы doc.
+- **MoE reasons in English** despite the top-of-prompt Russian-`<think>` rule — known Qwen-MoE
+  bias; final answer is correct Russian. Decided NOT worth extra prompt overhead to fight.
+- **Context-length gotcha:** the MoE must be loaded at a large context (use **64K**); LM
+  Studio's JIT default of 4096 causes "Context size exceeded" on the very first message
+  (system prompt + tools + a KB result alone exceed 4K). Save 65536 as the model's default
+  in LM Studio so a reload doesn't drop back to 4K.
+
+---
+
+## 12. Session 2026-06-06 — schema v2, KB expansion, fuzzy search, model-ceiling finding
+
+### 12.1 Schema v2 migration (BREAKING — replaces gtsu_search)
+The legacy single-table `gtsu_search` JSONB prototype is **gone**. New normalized model in
+**`db/schema_v2.sql`** (idempotent), populated by **`gcu/parse_gtsu_v2.py`**:
+- **`reports`** — one row per xlsx (date, baseline_year, sha256-dedup, red/yellow/green counts).
+- **`report_sheets`** — one row per sheet.
+- **`metrics`** — one row per indicator leaf, OPERATIONAL sheets only (Доклад Ц ЦЗ + Срок
+  доставки). Typed columns (no JSONB): `indicator_number`, `parent_indicator`, `name`,
+  `unit`, `day_fact`, `month_fact`, `*_to_plan`, `*_to_prev_year`, `zone`, `responsible`,
+  `text_comment`, **`populates`** (so callers filter cumulative-only indicators explicitly
+  instead of guessing on NULL `day_fact`).
+- **`investment_metrics`** — Инвест sheets (different shape, kept separate).
+- **`report_comments`** — free-text comment rows.
+- Cleanup: dropped dead columns (subcategory, raw_data, audit_log, reports.status/error_message
+  — all 0% used after a full 61-day load).
+- **Deleted (old v1):** `db/setup_db.sql`, `db/gtsu_views.sql`, `db/gtsu_search_dump.sql`,
+  `db/seed_comments.sql`, `gcu/create_gtsu_db.py`, `gcu/parse_gtsu_excel.py`, `gcu/gcu_filter.py`,
+  `gcu/querytool.py`, `gcu/openapi_sql_server.py`. (The MCP `query`/`describe` tools now target
+  `reports`/`metrics`.)
+
+### 12.2 April 2026 data loaded
+All 30 April days ingested (+10,559 rows). DB now holds **March 2022 (31 days) + April 2026
+(30 days) = 61 reports, 20,056 metrics**. Note the source quirks surfaced (questions for the
+ЦГЦУ interview): April compares **«к 2025»** (March was «к 2021»); many indicators are
+**cumulative-only** (`day_fact` NULL, only `*_year` populated — e.g. скорость доставки);
+no **«на больничном»** indicator exists in these files.
+
+### 12.3 KB grew to 1,892 chunks across 4 tiers
+| Collection | Chunks | What | Cap |
+|---|---|---|---|
+| pte | 676 | ПТЭ + appendices (verbatim) | 2600 |
+| textbooks | 1006 | Railway textbooks | 600 (trim hard) |
+| reference | 8 | `Срок доставки (факторы).docx` (boosted) | 4000 |
+| glossary | 202 | **`Аббревиатуры РЖД.pdf`** — telegraph-code directory (boosted) | 2500 |
+- **`glossary`** (new) decodes the codes that litter the data: Ц, ЦЗ-1, ЦЗ-ЦТ, ЦФТО, ЦБС,
+  ДЦУП… and the Аппарат управления structure. New `segment_glossary()` in `prepare_kb.py`
+  (`--collection glossary`) keeps each org-unit's role→code block whole.
+- **`reference`/`glossary` get +0.010 RRF boost** so curated authoritative docs outrank
+  general textbook chunks.
+- **Per-collection truncation caps** (`KB_CAPS` in the MCP server) replaced the single
+  600-char cap: textbooks stay lean (600, bloat lives there), but glossary/pte/reference come
+  back whole so «перечисли всё» questions get complete lists. Fixed the bug where the 600-cap
+  cut the «Руководство ОАО РЖД» chunk to ~⅓ (model saw 6 of 19 roles).
+- **Grounding rule** (`db/kb_grounding.py`, «ОПОРА НА ИСТОЧНИКИ»): even with full data the MoE
+  was answering structure from its **training memory** (generic dept names, 0 codes). The rule
+  forces "answer STRICTLY from retrieved fragments; quote exact names/codes; if fragments don't
+  cover it, say so". Verified: 0 → 18 real codes in the answer.
+
+### 12.4 Trigram fuzzy name search (real win, kept)
+Indicator names are heavily **abbreviated** in the source («груз.», «в т.ч.», «установл.»,
+«собл.»), so the model fished with 2-7 `ILIKE`-by-word attempts per question (model guessed
+`%грузовых отправок%` → 0 rows; reality `%груз. отправок%` → 90 rows).
+- **`CREATE INDEX idx_metrics_name_trgm ON metrics USING gin (name gin_trgm_ops)`** (in
+  `schema_v2.sql`) → fast `name % 'запрос'` / `ORDER BY similarity(name,'…') DESC`.
+- **`describe('metrics')`** now appends two facts: the **report_date range** (so the model
+  stops guessing empty dates like May 2026) and the **abbreviation + fuzzy-search hint**.
+Result: name-discovery fishing eliminated (Q2 found классы via `name % 'класс'` immediately
+vs 7 ILIKE attempts).
+
+### 12.5 Show only the MoE in OWI
+**`db/show_only_moe.py`** (idempotent, reversible — hides, never deletes): deactivates all
+presets except «ЦГЦУ Ассистент 35Б MoE (локальный)», trims the LM Studio whitelist to just
+`qwen3.6-35b-a3b`, disables the API (agentplatform) connection. Dropdown now shows one model.
+
+### 12.6 Honest finding — a MODEL CEILING, not a config bug
+After fixing name-fishing, the bottleneck **moved**: the Qwen 35B MoE **re-runs the identical
+data query 4-6× before answering** (saw `SELECT … month_fact WHERE report_date>='2026-04-01'`
+repeated 5× in one trace). No prompt/DB line stops it. Across prompt/schema variants
+(v2 7/10, v2.1 6/10, v3 7/10, v3.1+trigram 8/15) the re-query loop persists on hard multi-step
+analytical questions; **simple operational questions are clean and numbers are accurate**.
+The trigram + describe + grounding fixes are real, general improvements — keep them. Remaining
+levers (NOT yet done): a **harness-level guard** that detects a repeated identical query and
+injects "you already have this — answer now"; a **larger dense model** (27B follows
+instructions better per March notes); or **accept 8/15 on hard analytics and ship** (the bulk
+of real operational use works).
+
+### 12.7 Pending
+- Harness dup-query guard (the only untried lever that might lift the hard-question ceiling).
+- Decide model: keep MoE (fast, wanders on multi-step) vs dense 27B (slower, more obedient).
+- ЦГЦУ interview (human task) on indicator semantics — see 12.2 quirks.
+
+---
+*Generated end of 2026-06-05 session, extended 2026-06-06 (schema v2, KB tiers, fuzzy search,
+model-ceiling finding). Full architecture also in memory file gcu-assistant-architecture.md.*

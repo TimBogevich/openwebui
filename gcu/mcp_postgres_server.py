@@ -3,7 +3,8 @@
 GCU Postgres MCP Server — Streamable HTTP transport.
 
 A minimal MCP server that exposes a `query` tool for read-only SQL against the
-local gtsu_search table. Speaks the Streamable HTTP protocol that Open WebUI
+local PostgreSQL (reports / metrics / investment_metrics / report_comments,
+plus the knowledge base kb_chunks). Speaks the Streamable HTTP protocol that Open WebUI
 v0.6.31+ expects natively.
 
 Run:
@@ -42,7 +43,7 @@ from mcp.server import FastMCP
 # Create the MCP server
 mcp = FastMCP(
     "GCU Postgres",
-    instructions="Сервер для SQL-запросов к таблице gtsu_search (доклады ГЦУ РЖД)",
+    instructions="PostgreSQL — ежедневные доклады ГЦУ ОАО РЖД.",
 )
 
 DB_URL = os.environ.get(
@@ -51,7 +52,7 @@ DB_URL = os.environ.get(
 )
 
 
-DEFAULT_TABLE = os.environ.get("GCU_TABLE", "gtsu_search")
+DEFAULT_TABLE = os.environ.get("GCU_TABLE", "metrics")
 
 _FORBIDDEN = ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE", "TRUNCATE", "GRANT", "MERGE")
 
@@ -94,16 +95,11 @@ def _fmt_table(cols, rows, limit_rows=50):
 
 @mcp.tool()
 def describe(table: str = "") -> str:
-    """
-    Возвращает АКТУАЛЬНУЮ структуру таблицы прямо из базы (не захардкожено): список колонок
-    с типами и комментариями, число строк, диапазоны дат, а также РЕАЛЬНЫЕ примеры значений
-    каждой колонки и ключи JSONB-полей. Вызывайте ПЕРВЫМ, чтобы понять схему и соглашения
-    хранения, и ПОВТОРНО, если запрос неожиданно вернул мало/ноль строк — прежде чем делать
-    вывод об отсутствии данных. Примеры значений показывают, в какой колонке что лежит
-    (например, что названия-листья дерева лежат в одной колонке, а тема/раздел — в другой).
+    """Возвращает структуру таблицы: колонки с типами и комментариями,
+    число строк, диапазоны/образцы значений.
 
-    :param table: имя таблицы (по умолчанию основная таблица докладов)
-    :return: текстовое описание схемы и образцов данных
+    :param table: имя таблицы (по умолчанию — основная таблица)
+    :return: текстовое описание схемы
     """
     import psycopg
 
@@ -141,23 +137,34 @@ def describe(table: str = "") -> str:
                 out = [f"Таблица/представление: {tbl} — строк: {n_rows}"]
                 if tbl_comment:
                     out.append(f"Описание: {tbl_comment}")
-                # Point the agent at the decoded views (discovered dynamically,
-                # not hardcoded into the prompt). Only when describing the base table.
+                # List sibling tables — names only, no prescriptions, no examples.
                 if tbl == DEFAULT_TABLE:
-                    out.append("")
-                    out.append("ДОСТУПНЫЕ ПРЕДСТАВЛЕНИЯ (рекомендуется для запросов):")
-                    out.append("  • gtsu — декодированная витрина: типизированные колонки "
-                               "(факт_сутки, факт_месяц_нараст, факт_год_нараст), отклонения уже "
-                               "в процентах (откл_*_pct), зона текстом ('красная'/'жёлтая'/'зелёная'). "
-                               "Для ЧИСЛОВЫХ вопросов используй gtsu вместо разбора metrics JSONB. "
-                               "Схему смотри: describe('gtsu').")
-                    out.append("  • gtsu_catalog — справочник: какие показатели и какие разрезы "
-                               "(по дорогам/филиалам) реально есть. Смотри сюда, прежде чем "
-                               "утверждать, что разбивки нет.")
-                    out.append("  • dept_codes — справочник кодов подразделений (code↔name). "
-                               "JOIN по responsible=code чтобы расшифровать код (ЦБС→Бухгалтерская "
-                               "служба) или найти подразделение по названию (ILIKE по name→code). "
-                               "Не все коды есть в справочнике — если строки нет, оставь код как есть.")
+                    cur.execute(
+                        "SELECT table_name FROM information_schema.tables "
+                        "WHERE table_schema='public' AND table_type='BASE TABLE' "
+                        "ORDER BY table_name"
+                    )
+                    others = [r[0] for r in cur.fetchall() if r[0] != tbl]
+                    if others:
+                        out.append("")
+                        out.append("Другие таблицы в базе: " + ", ".join(others))
+                    # Two facts that save the model from blind fishing:
+                    #  (a) which report dates actually exist (so it stops guessing dates)
+                    #  (b) names are abbreviated → use trigram fuzzy search, not ILIKE-by-word
+                    try:
+                        cur.execute(
+                            "SELECT min(report_date), max(report_date), count(*) FROM reports")
+                        dmin, dmax, ndays = cur.fetchone()
+                        out.append("")
+                        out.append(f"Доступные даты докладов (reports.report_date): {dmin} .. {dmax} "
+                                   f"(всего {ndays}). Перед запросом за период убедись, что дата есть.")
+                        out.append("Названия показателей (metrics.name) СОКРАЩЕНЫ в источнике "
+                                   "(«груз.», «в т.ч.», «установл.», «собл.»). Поиск по точному слову "
+                                   "через ILIKE часто промахивается. Ищи по СМЫСЛУ через триграммное "
+                                   "сходство: WHERE name % 'твой запрос'  или  "
+                                   "ORDER BY similarity(name, 'твой запрос') DESC LIMIT 5.")
+                    except Exception:
+                        conn.rollback()
                 out.append("")
                 out.append("КОЛОНКИ (тип — комментарий):")
                 for name, dtype, comment in cols:
@@ -209,18 +216,9 @@ def describe(table: str = "") -> str:
 
 @mcp.tool()
 def query(sql: str) -> str:
-    """
-    Выполняет read-only SQL-запрос (SELECT/WITH) к базе докладов ГЦУ РЖД.
+    """Выполняет read-only SQL-запрос (SELECT/WITH) к PostgreSQL.
 
-    Если не знаете точную структуру или имена колонок — сначала вызовите инструмент
-    `describe`: он покажет актуальную схему и реальные образцы значений прямо из базы.
-
-    Данные иерархичны (дерево показателей). Числовые отклонения хранятся как доли
-    (-0.0979 = -9.79%). Всегда добавляйте LIMIT. Если запрос вернул 0 строк — не делайте
-    вывод об отсутствии данных сразу: вызовите `describe` и проверьте, в какой колонке
-    лежит искомое (имя-лист и тема/раздел часто в разных колонках), затем повторите поиск.
-
-    :param sql: SQL SELECT/WITH-запрос (только чтение, с LIMIT)
+    :param sql: SQL SELECT/WITH (только чтение)
     :return: результат в текстовом виде
     """
     result, err = _run_select(sql)
@@ -237,13 +235,9 @@ _MON_RU = ["", "января", "февраля", "марта", "апреля", "
 
 @mcp.tool()
 def current_datetime(timezone: str = "Europe/Moscow") -> str:
-    """
-    Возвращает ТЕКУЩУЮ дату и время в указанном часовом поясе. Вызывай этот
-    инструмент для любых вопросов «какой сегодня день», «какое сегодня число»,
-    «сколько сейчас времени», «какой месяц/год сейчас». НЕ отвечай по памяти —
-    дата в твоих весах устарела.
+    """Возвращает текущую дату и время в указанном часовом поясе (IANA).
 
-    :param timezone: имя зоны IANA (по умолчанию Europe/Moscow; напр. UTC, Asia/Yekaterinburg)
+    :param timezone: имя зоны IANA (по умолчанию Europe/Moscow)
     :return: дата и время по-русски
     """
     import datetime as dt
@@ -260,12 +254,10 @@ def current_datetime(timezone: str = "Europe/Moscow") -> str:
 
 @mcp.tool()
 def weather(city: str = "Москва") -> str:
-    """
-    Возвращает текущую погоду в указанном городе (через open-meteo.com, без ключа).
-    Используй для вопросов о погоде. Если нет доступа к интернету — сообщи об этом.
+    """Возвращает текущую погоду в городе (источник: open-meteo.com).
 
     :param city: название города (по умолчанию Москва)
-    :return: краткая сводка погоды по-русски
+    :return: краткая сводка погоды
     """
     import json
     import urllib.parse
@@ -304,6 +296,114 @@ def weather(city: str = "Москва") -> str:
                 f"Ветер {round(c['wind_speed_10m'])} м/с, влажность {c['relative_humidity_2m']}%.")
     except Exception as e:
         return f"Не удалось получить погоду для «{city}»: {str(e)[:120]}"
+
+
+# ---------------------------------------------------------------------------
+# Knowledge base (RAG over the railway literature) — on-demand tool
+# ---------------------------------------------------------------------------
+# Embedder must MATCH what embed_kb.py used. e5-large-INSTRUCT: query is wrapped
+# with an instruction; passages were embedded bare (verified best-margin).
+KB_EMBED_URL = os.environ.get("KB_EMBED_URL", "http://host.docker.internal:1234/v1/embeddings")
+KB_EMBED_MODEL = os.environ.get("KB_EMBED_MODEL", "text-embedding-multilingual-e5-large-instruct")
+KB_QUERY_INSTRUCT = ("Instruct: Given a question, retrieve passages that answer it\nQuery: ")
+
+
+def _embed_query(text):
+    import json as _json
+    import urllib.request as _u
+    payload = {"model": KB_EMBED_MODEL, "input": [KB_QUERY_INSTRUCT + text]}
+    req = _u.Request(KB_EMBED_URL, data=_json.dumps(payload).encode("utf-8"),
+                     headers={"Content-Type": "application/json"})
+    with _u.urlopen(req, timeout=60) as r:
+        d = _json.load(r)
+    return d["data"][0]["embedding"]
+
+
+# Per-chunk character cap on returned passages, BY COLLECTION. Bulky textbook
+# sections are trimmed hard (context-lean); short authoritative reference/glossary
+# docs come back whole/generous so «перечисли всё» questions get complete lists.
+KB_CAPS = {
+    "reference": 4000,   # curated справки — short, return whole
+    "glossary": 2500,    # org-unit blocks — keep the role→code list intact
+    "pte": 2600,         # regulations — fairly complete clause text
+    "textbooks": 600,    # bulky prose — trim hard (this is where bloat lives)
+}
+KB_CAP_DEFAULT = int(os.environ.get("KB_SNIPPET_CHARS", "800"))
+
+
+@mcp.tool()
+def search_knowledge(query: str, k: int = 3, collection: str = "") -> str:
+    """Поиск по справочной литературе РЖД (ПТЭ, учебники, справочники).
+    Возвращает релевантные фрагменты с указанием источника.
+
+    :param query: запрос на русском
+    :param k: сколько фрагментов (1–6, по умолчанию 3)
+    :param collection: '' — все коллекции; 'pte' | 'textbooks' | 'reference' | 'glossary' — фильтр
+    :return: фрагменты с источниками
+    """
+    import psycopg
+
+    k = max(1, min(int(k), 6))
+    try:
+        vec = "[" + ",".join(f"{x:.7g}" for x in _embed_query(query)) + "]"
+    except Exception as e:
+        return f"Ошибка эмбеддинга запроса (модель {KB_EMBED_MODEL} не отвечает?): {str(e)[:160]}"
+
+    coll = collection.strip().lower()
+    coll_filter = ("AND collection = %(coll)s"
+                   if coll in ("pte", "textbooks", "reference", "glossary") else "")
+
+    # Hybrid retrieval via Reciprocal Rank Fusion (vector rank + russian FTS rank),
+    # plus a small BOOST for curated 'reference' docs so authoritative справки
+    # surface above general textbook chunks. Validated to route precisely.
+    sql = f"""
+    WITH v AS (
+      SELECT id, row_number() OVER (ORDER BY embedding <=> %(vec)s::vector) AS vr
+      FROM kb_chunks WHERE true {coll_filter}
+      ORDER BY embedding <=> %(vec)s::vector LIMIT 30
+    ),
+    k AS (
+      SELECT id, row_number() OVER (ORDER BY ts_rank(tsv, plainto_tsquery('russian', %(q)s)) DESC) AS kr
+      FROM kb_chunks
+      WHERE tsv @@ plainto_tsquery('russian', %(q)s) {coll_filter}
+      LIMIT 30
+    )
+    SELECT c.citation, c.collection, c.is_verbatim, c.content,
+           (coalesce(1.0/(60+v.vr),0) + coalesce(1.0/(60+k.kr),0)
+            + CASE WHEN c.collection IN ('reference','glossary') THEN 0.010 ELSE 0 END) AS rrf
+    FROM kb_chunks c
+    LEFT JOIN v ON c.id = v.id
+    LEFT JOIN k ON c.id = k.id
+    WHERE (v.id IS NOT NULL OR k.id IS NOT NULL) {coll_filter}
+    ORDER BY rrf DESC
+    LIMIT %(k)s
+    """
+    try:
+        with psycopg.connect(DB_URL, connect_timeout=8) as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, {"vec": vec, "q": query, "k": k, "coll": coll})
+                rows = cur.fetchall()
+    except Exception as e:
+        return f"Ошибка поиска по базе знаний: {str(e)[:200]}"
+
+    if not rows:
+        return ("По справочной литературе ничего не найдено по этому запросу. "
+                "Переформулируй запрос ключевыми терминами или ответь, что в "
+                "доступных источниках сведений нет.")
+
+    tags = {"pte": "НОРМАТИВ (дословно)", "reference": "СПРАВКА (курируемая)",
+            "glossary": "СПРАВОЧНИК сокращений/структуры"}
+    out = [f"Найдено фрагментов: {len(rows)} (источник указывай в ответе)\n"]
+    for citation, coll_, verbatim, content, _rrf in rows:
+        tag = tags.get(coll_, "учебник")
+        cap = KB_CAPS.get(coll_, KB_CAP_DEFAULT)
+        body = " ".join(content.split())               # fold internal whitespace
+        if len(body) > cap:
+            body = body[:cap].rsplit(" ", 1)[0] + "… [фрагмент усечён; уточни запрос для полного текста]"
+        out.append(f"━━ Источник: {citation}  [{tag}]")
+        out.append(body)
+        out.append("")
+    return "\n".join(out)
 
 
 if __name__ == "__main__":
