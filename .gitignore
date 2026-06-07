@@ -17,6 +17,16 @@ _kb_pilot/
 db/_*.json
 db/_*.md
 db/_*.py
+db/_*.txt
 db/test_results*.json
 db/test_pretty*.md
 db/stress_test_report.md
+
+# Local rollback backups (kept on disk only — not for repo)
+*.bak
+*.bak.*
+db/*.bak
+db/*.bak.*
+gcu/*.bak
+gcu/*.bak.*
+~$*
