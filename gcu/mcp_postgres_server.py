@@ -219,12 +219,21 @@ def describe(table: str = "") -> str:
                             out.append("Связанные таблицы-источники (детализация по report_date):")
                             for st in spr_tables:
                                 try:
+                                    # Coverage window — live, no hardcoding.
                                     cur.execute(f'SELECT min(report_date), max(report_date), count(DISTINCT report_date) FROM "{st}"')
                                     smin, smax, sndays = cur.fetchone()
+                                    # Routing intent — first sentence of the table COMMENT in pg.
+                                    # Single source of truth: the schema's own description, written
+                                    # once at table creation. Auto-updates if you change the COMMENT.
+                                    cur.execute("SELECT obj_description(%s::regclass)", (st,))
+                                    desc_row = cur.fetchone()
+                                    intent = ""
+                                    if desc_row and desc_row[0]:
+                                        intent = " — " + desc_row[0].split(".")[0].strip()
                                     if smin and smax:
-                                        out.append(f"  • {st}: {smin} .. {smax} ({sndays} дат)")
+                                        out.append(f"  • {st}: {smin} .. {smax} ({sndays} дат){intent}")
                                     else:
-                                        out.append(f"  • {st}: пусто")
+                                        out.append(f"  • {st}: пусто{intent}")
                                 except Exception:
                                     conn.rollback()
                     except Exception:
