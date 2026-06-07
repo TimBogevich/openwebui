@@ -7,7 +7,7 @@ sys.path.insert(0, "/app")
 import mcp_postgres_server as S
 
 LM = "http://host.docker.internal:1234/v1/chat/completions"
-MODEL = os.environ.get("TEST_MODEL", "qwen3.6-35b-a3b")
+MODEL = os.environ.get("TEST_MODEL", "qwen3.6-35b-a3b-mtp")
 TIMEOUT = 360
 MAX_TURNS = 10
 
