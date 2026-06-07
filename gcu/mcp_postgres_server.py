@@ -356,6 +356,97 @@ def query(sql: str) -> str:
     return out
 
 
+# ---------------------------------------------------------------------------
+# find_indicator — semantic search over indicator_index.
+# Replaces the name-fishing pattern: instead of model rewriting WHERE clause
+# with trigram/ILIKE patterns until something matches, it asks find_indicator
+# by MEANING and gets the top-k actual names from metrics back. Source of
+# truth is the metrics table — indicator_index is a derivative, rebuilt via
+# gcu/build_indicator_index.py whenever new data is loaded.
+# ---------------------------------------------------------------------------
+_FIND_EMB_URL   = os.environ.get("KB_EMBED_URL",   "http://host.docker.internal:1234/v1/embeddings")
+_FIND_EMB_MODEL = os.environ.get("KB_EMBED_MODEL", "text-embedding-multilingual-e5-large-instruct")
+# e5-large-instruct convention: queries wrapped with instruction prefix.
+_FIND_INSTRUCT  = "Instruct: Given a question about a metric, retrieve the indicator name\nQuery: "
+
+
+def _embed_q(text):
+    """Embed user query for find_indicator. Wraps with Instruct prefix."""
+    import json as _json
+    import urllib.request as _u
+    payload = {"model": _FIND_EMB_MODEL, "input": [_FIND_INSTRUCT + text]}
+    req = _u.Request(_FIND_EMB_URL, data=_json.dumps(payload).encode("utf-8"),
+                     headers={"Content-Type": "application/json"})
+    with _u.urlopen(req, timeout=60) as r:
+        return _json.load(r)["data"][0]["embedding"]
+
+
+_find_calls = [0]   # counter — find_indicator calls per conversation
+_FIND_MAX = 2       # after 2 calls, refuse and force the model to pick
+
+
+@mcp.tool()
+def find_indicator(query: str, k: int = 5) -> str:
+    """Семантический поиск показателя в metrics по СМЫСЛУ запроса.
+
+    Используй это ВМЕСТО name % 'слова' или name ILIKE '%слова%' — даёт более
+    точные результаты по неточным/перефразированным запросам. Возвращает топ-k
+    реальных имён показателей с их типичным indicator_number, разделом и единицей.
+    После получения списка — выбирай подходящее name и используй ТОЧНОЕ значение
+    в WHERE name = '...' для query().
+
+    :param query: вопрос или ключевое выражение на русском (например
+                  'задержанные отправки', 'участковая скорость', 'погрузка угля')
+    :param k: сколько вариантов вернуть (1-10, по умолчанию 5)
+    :return: список кандидатов с метаданными
+    """
+    import psycopg
+
+    # Anti-loop: don't let the model re-search with rephrased queries forever.
+    # The first call returns 5-10 good candidates — that's enough information.
+    _find_calls[0] += 1
+    if _find_calls[0] > _FIND_MAX:
+        _find_calls[0] = 0   # reset so user can resume
+        return ("⛔ СТОП: find_indicator уже вызывался " + str(_FIND_MAX) +
+                " раз(а). ВЫБЕРИ один из ранее возвращённых кандидатов и сделай "
+                "SQL-запрос через query(). Если ни один не подходит — дай честный "
+                "ответ «искомого показателя в БД нет», не перебирай формулировки.")
+
+    k = max(1, min(int(k), 10))
+    try:
+        vec = "[" + ",".join(f"{x:.7g}" for x in _embed_q(query)) + "]"
+    except Exception as e:
+        return f"Ошибка эмбеддинга запроса: {str(e)[:160]}"
+
+    try:
+        with psycopg.connect(DB_URL, connect_timeout=8) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT name, example_inum, example_section, example_unit,
+                           n_occurrences, has_road,
+                           1 - (embedding <=> %s::vector) AS sim
+                    FROM indicator_index
+                    ORDER BY embedding <=> %s::vector
+                    LIMIT %s
+                """, (vec, vec, k))
+                rows = cur.fetchall()
+    except Exception as e:
+        return f"Ошибка поиска: {str(e)[:200]}"
+
+    if not rows:
+        return ("Индекс пуст. Запусти gcu/build_indicator_index.py чтобы построить.")
+
+    out = [f"Топ-{len(rows)} кандидатов (по семантическому сходству):"]
+    out.append("")
+    for name, inum, section, unit, n_occ, has_road, sim in rows:
+        road_tag = " [есть разбивка по дорогам]" if has_road else ""
+        out.append(f"  sim={sim:.3f}  inum={inum}  раздел={section}  ед={unit}{road_tag}")
+        out.append(f"    name = «{name}»")
+    out.append("")
+    out.append("ИСПОЛЬЗУЙ name дословно в WHERE m.name = '...' (не через ILIKE/%).")
+    return "\n".join(out)
+
+
 _WDAY_RU = ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"]
 _MON_RU = ["", "января", "февраля", "марта", "апреля", "мая", "июня",
            "июля", "августа", "сентября", "октября", "ноября", "декабря"]
