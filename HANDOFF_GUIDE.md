@@ -290,5 +290,52 @@ of real operational use works).
 - ЦГЦУ interview (human task) on indicator semantics — see 12.2 quirks.
 
 ---
-*Generated end of 2026-06-05 session, extended 2026-06-06 (schema v2, KB tiers, fuzzy search,
-model-ceiling finding). Full architecture also in memory file gcu-assistant-architecture.md.*
+
+## 13. Session 2026-06-07 — benchmarks (Gemma 26B + 102Q), dup-query guard, справки-источники queries
+
+### 13.1 Benchmarks run & scored
+- **Gemma 26B a4b-qat** wired into OWI as «ЦГЦУ Ассистент Gemma 26Б (локальный)» (`db/add_gemma.py`).
+  15Q result: **7/15 genuine** (3 lazy 0-call refusals, same re-query ceiling as Qwen). Qwen wins on accuracy
+  (8/15) AND speed (1.63 s/call vs 2.80 s/call for Gemma). Gemma's 3 refusals are model-specific.
+- **Qwen 40Q full benchmark**: 18/40, 10.0 min total. Detailed group analysis documented
+  (`db/benchmark_qwen35moe_40.md` + `db/Бенчмарк_Qwen35MoE_40.docx`).
+- **15Q question list** extracted to `db/questions_15.txt` for sharing.
+
+### 13.2 Dup-query guard (in `mcp_postgres_server.py`)
+Added graduated ring-buffer guard: 3rd identical SQL → WARN, 4th → BLOCK with "answer now" message.
+Window=12 recent queries, no TTL. Tested: 40Q run with guard → 4 new wins, 4 regressions (all regressions
+due to LLM non-determinism, guard fired 0 times on them — confirmed by per-Q ring simulation).
+Net impact is positive; final stats need 3-run average to eliminate variance at temp=0.2.
+
+### 13.3 GCU-2026-03-12.xlsx loaded
+The ГЦУ доклад for 2026-03-12 was 0 bytes (copy error). Fixed and loaded: **299 metrics, 58 red,
+97 yellow**. DB now: 62 reports (2022-03-01 … 2026-04-30), 20,355 metrics.
+
+### 13.4 Справки-источники (5 tables, loaded for 2026-03-12)
+`db/spravki_schema.sql` + `gcu/parse_spravki.py` → 5 queryable tables linked by `report_date`:
+| Table | Rows | What |
+|---|---|---|
+| `spravki_delays` | 96 | Detained trains by delay-code + road (12.03.2026) |
+| `spravki_failures` | 45 | Equipment failures 1-2 cat. by dept (12.03.2026) |
+| `spravki_locomotives` | 29 | Locomotive fleet plan/fact by polygon (12.03.2026) |
+| `spravki_port_stations` | 163 | Port stations ДВОСТ/ОКТ/СКАВ (12.03.2026) |
+| `spravki_speed` | 34 | Section + technical speed by road (12.03.2026) |
+`describe('metrics')` now shows all 5 tables with routing hints. Model can now answer:
+«задержано поездов по коду 21 на 12.03» → **22 trains / 1405 wagons** (direct SQL).
+To ingest new dates: `python gcu/parse_spravki.py --date YYYY-MM-DD --dir /path/to/справки`
+
+### 13.5 102Q comprehensive benchmark (running)
+`db/questions_100.py` (102 questions across 9 groups A–I) + `db/test_runner_100.py`.
+Groups: A=delays, B=personnel, C=freight work, D=failures/schedule, E=finance,
+F=knowledge-base, G=spravki-sources, H=hard analytical SQL, I=honest-refusal cases.
+Sources: Обзраз2.docx, Вопросы по Срокам доставки.docx, Вопросы по Персоналу.docx,
+existing 40Q set, session questions, 10 deliberately hard SQL questions.
+
+### 13.6 Pending
+- 102Q benchmark results + Word report (running as of 2026-06-07 session end).
+- Harness dup-query guard re-test at temperature=0.0 for clean before/after comparison.
+- Load спр авки-источники for April 2026 dates (same format, parser ready).
+- Indicator_number non-uniqueness warning in `describe()` (causes Q1 loop — quick fix).
+
+---
+*Extended 2026-06-07. Справки integration, dual benchmark (Gemma + Qwen 102Q), dup-query guard.*

@@ -7,6 +7,9 @@ __pycache__/
 _done/
 _failed/
 
+# Live prompt (contains production system prompt — not committed)
+db/_live_prompt.txt
+
 # Scratch / test cruft (regenerable — not committed)
 _chrome_tmp/
 _uploader_shot.png
