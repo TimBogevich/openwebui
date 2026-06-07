@@ -140,6 +140,14 @@ def describe(table: str = "") -> str:
     """
     import psycopg
 
+    # FIX 1: guard on describe — same ring-buffer logic as query().
+    # Prevents the model from calling describe('metrics') 9× in a row.
+    tbl_key = f"__describe__{(table or DEFAULT_TABLE).strip()}"
+    level, _ = _qguard_check(tbl_key)
+    if level == 2:
+        return ("⛔ СТОП: describe для этой таблицы уже вызывался несколько раз. "
+                "Схема не изменилась. Используй уже полученную информацию и пиши SQL-запрос.")
+
     tbl = (table or DEFAULT_TABLE).strip()
     if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", tbl):
         return "Ошибка: недопустимое имя таблицы."
@@ -200,6 +208,59 @@ def describe(table: str = "") -> str:
                                    "через ILIKE часто промахивается. Ищи по СМЫСЛУ через триграммное "
                                    "сходство: WHERE name % 'твой запрос'  или  "
                                    "ORDER BY similarity(name, 'твой запрос') DESC LIMIT 5.")
+
+                        # FIX 2: warn about columns that DON'T exist (models hallucinate these)
+                        try:
+                            cur.execute(
+                                "SELECT column_name FROM information_schema.columns "
+                                "WHERE table_name='metrics' ORDER BY ordinal_position")
+                            real_cols = {r[0] for r in cur.fetchall()}
+                            ghost = [c for c in ("value","plan","fact","report_date","road_name",
+                                                  "year","month","date","delta","status")
+                                     if c not in real_cols]
+                            if ghost:
+                                out.append(f"НЕТ таких колонок в metrics: {', '.join(ghost)}. "
+                                           f"Числовые данные: day_fact, month_fact, year_fact, "
+                                           f"day_to_plan, month_to_plan, day_to_prev_year, month_to_prev_yr.")
+                        except Exception:
+                            conn.rollback()
+
+                        # FIX 3: category→section navigation map (dynamic from DB)
+                        # Tells the model WHERE each topic lives without hardcoding names.
+                        try:
+                            cur.execute(
+                                "SELECT DISTINCT section_roman, category "
+                                "FROM metrics WHERE category IS NOT NULL AND section_roman IS NOT NULL "
+                                "ORDER BY section_roman, category")
+                            cat_rows = cur.fetchall()
+                            if cat_rows:
+                                out.append("")
+                                out.append("НАВИГАЦИЯ по разделам (section_roman → category):")
+                                cur_sec = None
+                                for sec, cat in cat_rows:
+                                    if sec != cur_sec:
+                                        out.append(f"  Раздел {sec}:")
+                                        cur_sec = sec
+                                    out.append(f"    • {cat[:70]}")
+                        except Exception:
+                            conn.rollback()
+
+                        # FIX 4: warn that indicator_number is NOT unique
+                        try:
+                            cur.execute(
+                                "SELECT count(*) FROM ("
+                                "  SELECT indicator_number FROM metrics "
+                                "  GROUP BY indicator_number HAVING count(DISTINCT name)>1"
+                                ") sub")
+                            ambig = cur.fetchone()[0]
+                            if ambig:
+                                out.append(f"")
+                                out.append(f"⚠ indicator_number НЕ уникален: {ambig} номеров "
+                                           f"соответствуют >1 показателю (разные листы/разделы). "
+                                           f"ВСЕГДА фильтруй по name, не только по indicator_number.")
+                        except Exception:
+                            conn.rollback()
+
                         out.append("")
                         out.append("СПРАВКИ-ИСТОЧНИКИ (детализация к докладу ГЦУ) — связаны с reports по report_date:")
                         out.append("  • spravki_delays       — задержанные поезда по кодам причин и дорогам "
