@@ -193,93 +193,40 @@ def describe(table: str = "") -> str:
                     if others:
                         out.append("")
                         out.append("Другие таблицы в базе: " + ", ".join(others))
-                    # Two facts that save the model from blind fishing:
-                    #  (a) which report dates actually exist (so it stops guessing dates)
-                    #  (b) names are abbreviated → use trigram fuzzy search, not ILIKE-by-word
+                    # Live FACTS only — no policy, no instructional prose, no hardcoded examples.
+                    #   1. main report date range (so model doesn't guess empty dates)
+                    #   2. coverage window for each spravki_* table (so it doesn't route
+                    #      to a table that has no data for the asked date)
+                    # All values come from the DB at call time — nothing typed here can rot.
                     try:
                         cur.execute(
                             "SELECT min(report_date), max(report_date), count(*) FROM reports")
                         dmin, dmax, ndays = cur.fetchone()
                         out.append("")
-                        out.append(f"Доступные даты докладов (reports.report_date): {dmin} .. {dmax} "
-                                   f"(всего {ndays}). Перед запросом за период убедись, что дата есть.")
-                        out.append("Названия показателей (metrics.name) СОКРАЩЕНЫ в источнике "
-                                   "(«груз.», «в т.ч.», «установл.», «собл.»). Поиск по точному слову "
-                                   "через ILIKE часто промахивается. Ищи по СМЫСЛУ через триграммное "
-                                   "сходство: WHERE name % 'твой запрос'  или  "
-                                   "ORDER BY similarity(name, 'твой запрос') DESC LIMIT 5.")
+                        out.append(f"reports.report_date: {dmin} .. {dmax} ({ndays} дат)")
 
-                        # FIX 2: warn about columns that DON'T exist (models hallucinate these)
-                        try:
-                            cur.execute(
-                                "SELECT column_name FROM information_schema.columns "
-                                "WHERE table_name='metrics' ORDER BY ordinal_position")
-                            real_cols = {r[0] for r in cur.fetchall()}
-                            ghost = [c for c in ("value","plan","fact","report_date","road_name",
-                                                  "year","month","date","delta","status")
-                                     if c not in real_cols]
-                            if ghost:
-                                out.append(f"НЕТ таких колонок в metrics: {', '.join(ghost)}. "
-                                           f"Числовые данные: day_fact, month_fact, year_fact, "
-                                           f"day_to_plan, month_to_plan, day_to_prev_year, month_to_prev_yr.")
-                        except Exception:
-                            conn.rollback()
-
-                        # FIX 3: category→section navigation map (dynamic from DB)
-                        # Tells the model WHERE each topic lives without hardcoding names.
-                        try:
-                            cur.execute(
-                                "SELECT DISTINCT section_roman, category "
-                                "FROM metrics WHERE category IS NOT NULL AND section_roman IS NOT NULL "
-                                "ORDER BY section_roman, category")
-                            cat_rows = cur.fetchall()
-                            if cat_rows:
-                                out.append("")
-                                out.append("НАВИГАЦИЯ по разделам (section_roman → category):")
-                                cur_sec = None
-                                for sec, cat in cat_rows:
-                                    if sec != cur_sec:
-                                        out.append(f"  Раздел {sec}:")
-                                        cur_sec = sec
-                                    out.append(f"    • {cat[:70]}")
-                        except Exception:
-                            conn.rollback()
-
-                        # FIX 4: warn that indicator_number is NOT unique
-                        try:
-                            cur.execute(
-                                "SELECT count(*) FROM ("
-                                "  SELECT indicator_number FROM metrics "
-                                "  GROUP BY indicator_number HAVING count(DISTINCT name)>1"
-                                ") sub")
-                            ambig = cur.fetchone()[0]
-                            if ambig:
-                                out.append(f"")
-                                out.append(f"⚠ indicator_number НЕ уникален: {ambig} номеров "
-                                           f"соответствуют >1 показателю (разные листы/разделы). "
-                                           f"ВСЕГДА фильтруй по name, не только по indicator_number.")
-                        except Exception:
-                            conn.rollback()
-
-                        out.append("")
-                        out.append("СПРАВКИ-ИСТОЧНИКИ (детализация к докладу ГЦУ) — связаны с reports по report_date:")
-                        out.append("  • spravki_delays       — задержанные поезда по кодам причин и дорогам "
-                                   "(коды 0,1,2,4,5,6,21,22,24,43,44,92; поля: delay_code, delay_name, road_code, trains, wagons). "
-                                   "Используй для вопросов о задержках по кодам/дорогам.")
-                        out.append("  • spravki_failures     — отказы техсредств 1-2 кат. по подразделениям "
-                                   "(поля: dept, failures_2025, failures_2026, change_pct, resolved). "
-                                   "Используй для вопросов об отказах техсредств по подразделениям.")
-                        out.append("  • spravki_locomotives  — эксплуатируемый парк локомотивов "
-                                   "(поля: section, polygon, road, plan, fact, delta). "
-                                   "Используй для вопросов о локомотивном парке.")
-                        out.append("  • spravki_port_stations— работа припортовых станций ДВС/ОКТ/СКАВ "
-                                   "(поля: road, station, load_plan, load_fact, detained_trains, wagons_total). "
-                                   "Используй для вопросов о портах и отставленных поездах на припортовых станциях.")
-                        out.append("  • spravki_speed        — участковая и техническая скорость по дорогам "
-                                   "(поля: speed_type ['section'|'technical'], road, norm, day_fact, day_delta, month_fact). "
-                                   "Используй для вопросов о скорости по дорогам.")
-                        out.append("  Даты покрытия справок: "
-                                   "SELECT DISTINCT report_date FROM spravki_delays ORDER BY report_date")
+                        # spravki tables — name + live coverage window. No prose, no column
+                        # hints (those are in each table's own describe()). The coverage window
+                        # is the critical fact — without it the model confidently queries
+                        # spravki_delays for April and gets 0 rows back.
+                        cur.execute(
+                            "SELECT table_name FROM information_schema.tables "
+                            "WHERE table_schema='public' AND table_name LIKE 'spravki_%' "
+                            "ORDER BY table_name")
+                        spr_tables = [r[0] for r in cur.fetchall()]
+                        if spr_tables:
+                            out.append("")
+                            out.append("Связанные таблицы-источники (детализация по report_date):")
+                            for st in spr_tables:
+                                try:
+                                    cur.execute(f'SELECT min(report_date), max(report_date), count(DISTINCT report_date) FROM "{st}"')
+                                    smin, smax, sndays = cur.fetchone()
+                                    if smin and smax:
+                                        out.append(f"  • {st}: {smin} .. {smax} ({sndays} дат)")
+                                    else:
+                                        out.append(f"  • {st}: пусто")
+                                except Exception:
+                                    conn.rollback()
                     except Exception:
                         conn.rollback()
                 out.append("")
@@ -287,10 +234,25 @@ def describe(table: str = "") -> str:
                 for name, dtype, comment in cols:
                     out.append(f"  • {name} ({dtype})" + (f" — {comment}" if comment else ""))
 
-                # 2) per-column profile: ranges, low-cardinality value lists, sample values
+                # 2) per-column profile — only for columns the model actually needs to
+                # know enumerated values for (road names, responsible codes, units).
+                # Audit/internal columns (cell_ref, source_row, source_sheet, created_at,
+                # indicator_number, parent_indicator, id, report_id, sheet_id) and all
+                # pure numeric ranges are hidden — they add tokens without helping SQL writing.
+                ОБРАЗЦЫ_SKIP = frozenset({
+                    "id", "report_id", "sheet_id", "cell_ref", "source_row",
+                    "source_sheet", "created_at", "indicator_number",
+                    "parent_indicator", "is_priority", "section_roman",
+                    "day_fact", "day_to_plan", "day_to_prev_year",
+                    "month_fact", "month_to_plan", "month_to_prev_yr",
+                    "year_fact", "year_to_plan", "year_to_prev_yr",
+                    "zone", "populates", "name", "category",
+                })
                 out.append("")
-                out.append("ОБРАЗЦЫ ДАННЫХ (из реальных строк, для понимания соглашений хранения):")
+                out.append("ЗНАЧЕНИЯ (для написания WHERE-условий):")
                 for name, dtype, _ in cols:
+                    if name in ОБРАЗЦЫ_SKIP:
+                        continue
                     col = f'"{name}"'
                     try:
                         if dtype in ("date", "timestamp without time zone", "timestamp with time zone",
@@ -301,6 +263,8 @@ def describe(table: str = "") -> str:
                         elif dtype in ("text", "character varying", "character"):
                             cur.execute(f"SELECT count(DISTINCT {col}) FROM \"{tbl}\"")
                             nd = cur.fetchone()[0]
+                            if nd == 0:
+                                continue   # empty column — don't waste tokens
                             if nd <= 40:
                                 cur.execute(
                                     f"SELECT {col} FROM \"{tbl}\" WHERE {col} IS NOT NULL "
