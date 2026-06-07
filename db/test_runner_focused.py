@@ -20,6 +20,11 @@ TOOLS = [
         "description": (S.describe.__doc__ or "")[:300],
         "parameters": {"type":"object","properties":{"table":{"type":"string"}}}}},
     {"type":"function","function":{
+        "name": "gcu-postgres_find_indicator",
+        "description": (S.find_indicator.__doc__ or "")[:400],
+        "parameters": {"type":"object","properties":{
+            "query":{"type":"string"},"k":{"type":"integer"}},"required":["query"]}}},
+    {"type":"function","function":{
         "name": "gcu-postgres_query",
         "description": (S.query.__doc__ or "")[:200],
         "parameters": {"type":"object","properties":{"sql":{"type":"string"}},"required":["sql"]}}},
@@ -42,6 +47,8 @@ def call_lm(messages):
     return json.load(urllib.request.urlopen(req, timeout=TIMEOUT))["choices"][0]
 
 def dispatch(name, args):
+    if "find_indicator" in name:
+        return S.find_indicator(args.get("query",""), k=args.get("k",5))
     if "describe" in name:
         return S.describe(args.get("table",""))
     if "_query" in name:
@@ -56,10 +63,12 @@ def dispatch(name, args):
 
 def run_one(num, question):
     print(f"\n{'='*72}\nQ{num}: {question[:80]}\n{'='*72}", flush=True)
-    # reset dup-query guard per question — guard catches loops WITHIN one Q,
+    # reset all guards per question — they catch loops WITHIN one Q,
     # not across unrelated questions from different users.
     try:
         S._recent_q.clear()
+        S._consec_zero[0] = 0
+        S._find_calls[0] = 0
     except Exception:
         pass
     sys_prompt = get_prompt()
