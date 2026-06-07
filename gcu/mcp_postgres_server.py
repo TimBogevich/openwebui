@@ -111,6 +111,14 @@ _QGUARD_WARN_AT = 2          # Nth identical (0-based prior count) -> warn
 _QGUARD_BLOCK_AT = 3         # Nth identical -> withhold data
 _recent_q = deque(maxlen=_QGUARD_WINDOW)   # holds normalized-sql md5 hashes
 
+# Zero-result fishing guard: counts CONSECUTIVE queries that returned 0 rows.
+# Resets on any query that returned rows. After 2 in a row, refuse with an
+# instruction to stop name-fishing and answer from previous results. Catches
+# the case where model rewrites the WHERE clause each turn (different SQL hash
+# every time, so the identical-query guard above can't see the pattern).
+_consec_zero = [0]   # list so we can mutate from inside functions
+_ZERO_BLOCK_AT = 2
+
 
 def _qnorm(sql):
     """Normalize SQL so cosmetic differences don't dodge the guard."""
@@ -320,10 +328,27 @@ def query(sql: str) -> str:
                 "данных. Если данных действительно не хватает, честно скажи, "
                 "каких именно, и не зацикливайся.")
 
+    # Zero-result fishing guard: refuse if previous N queries returned 0 rows.
+    # Catches the name-fishing loop where each rewrite has a different hash.
+    if _consec_zero[0] >= _ZERO_BLOCK_AT:
+        _consec_zero[0] = 0   # reset so user can resume after the warning
+        return ("⛔ СТОП: последние запросы возвращали 0 строк подряд. "
+                "Это означает, что искомого показателя НЕТ в текущей таблице — "
+                "ПЕРЕСТАНЬ перебирать формулировки. Дай честный ответ: "
+                "«искомый показатель в БД не найден» и предложи ближайшие "
+                "по смыслу из уже виденных результатов.")
+
     result, err = _run_select(sql)
     if err:
         return err
     cols, rows = result
+
+    # update zero-result counter
+    if len(rows) == 0:
+        _consec_zero[0] += 1
+    else:
+        _consec_zero[0] = 0
+
     out = _fmt_table(cols, rows)
     if level == 1:
         out = ("⚠️ Внимание: ты уже выполнял ЭТОТ ЖЕ запрос — результат тот же. "
