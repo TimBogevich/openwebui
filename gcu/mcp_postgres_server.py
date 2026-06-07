@@ -119,6 +119,14 @@ _recent_q = deque(maxlen=_QGUARD_WINDOW)   # holds normalized-sql md5 hashes
 _consec_zero = [0]   # list so we can mutate from inside functions
 _ZERO_BLOCK_AT = 2
 
+# Describe-loop guard: counts TOTAL describe() calls per question. Schema doesn't
+# change mid-question, so calling describe more than twice (e.g. metrics+reports
+# alternating, or one table re-described) is a wandering-loop signal. The
+# identical-call guard above only catches verbatim repeats; this catches the
+# alternating pattern (metrics→reports→metrics→spravki_delays etc.).
+_describe_calls = [0]
+_DESCRIBE_BLOCK_AT = 2
+
 
 def _qnorm(sql):
     """Normalize SQL so cosmetic differences don't dodge the guard."""
@@ -155,6 +163,17 @@ def describe(table: str = "") -> str:
     if level == 2:
         return ("⛔ СТОП: describe для этой таблицы уже вызывался несколько раз. "
                 "Схема не изменилась. Используй уже полученную информацию и пиши SQL-запрос.")
+
+    # FIX 5: total describe call cap per question. Catches the alternating
+    # pattern (metrics → reports → metrics → spravki_delays) where each call
+    # is "new" to the identical-call guard but the model is wandering.
+    _describe_calls[0] += 1
+    if _describe_calls[0] > _DESCRIBE_BLOCK_AT:
+        _describe_calls[0] = 0   # reset so user can resume after the block
+        return ("⛔ СТОП: describe уже вызывался " + str(_DESCRIBE_BLOCK_AT) +
+                " раз(а). Схема не меняется. Используй уже полученную информацию "
+                "и переходи к find_indicator + query. Если не знаешь куда смотреть — "
+                "вызови find_indicator('смысл вопроса') и работай с возвращёнными именами.")
 
     tbl = (table or DEFAULT_TABLE).strip()
     if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", tbl):
