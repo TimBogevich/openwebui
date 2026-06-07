@@ -112,3 +112,57 @@ COMMENT ON TABLE spravki_speed IS
   'Участковая и техническая скорость по дорогам России. '
   'speed_type: section=участковая, technical=техническая. '
   'Источник справок к ГЦУ. Связывается по report_date.';
+
+-- ---------------------------------------------------------------------------
+-- spravki_speed_restrictions — Ограничения скорости, не предусмотренные графиком
+-- Источник: "Справка об ограничениях скорости не предусмотренных графиком...xlsx"
+-- В источнике данные хранятся как PNG-картинка внутри xlsx — числа извлечены
+-- вручную из изображения в db/spravki_speed_restrictions_data.json.
+-- Структура: одна строка = одна дорога × одна дата. Колонка row_type различает
+-- плановое (заложено в график) и фактическое (в наличии) состояние.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS spravki_speed_restrictions (
+    id              serial PRIMARY KEY,
+    report_date     date NOT NULL,             -- 06.03 = plan baseline, 07–12.03 = facts
+    road            varchar(50) NOT NULL,      -- название дороги или 'Итого по сети'
+    row_type        varchar(10) NOT NULL,      -- 'plan' | 'fact'
+    restrictions    int,                       -- кол-во ограничений, шт.
+    restrictions_km numeric(10,1),             -- общая протяжённость, км
+    ratio_pct       int,                       -- соотношение факта к плану, % (только для plan row, для контекста)
+    delta_km        numeric(10,1)              -- отклонение в км (только для plan row, для контекста)
+);
+CREATE INDEX IF NOT EXISTS idx_speedrestr_date_road ON spravki_speed_restrictions (report_date, road);
+COMMENT ON TABLE spravki_speed_restrictions IS
+  'Ограничения скорости, не предусмотренные графиком движения поездов. '
+  'По дорогам: количество ограничений (шт.) и общая протяжённость (км). '
+  'row_type=plan — заложено в график, row_type=fact — фактическое в наличии. '
+  'Источник — справка-картинка в xlsx, числа извлечены вручную.';
+
+-- ---------------------------------------------------------------------------
+-- spravki_sort_stations — Работа важнейших сортировочных станций
+-- Источник: "Справка Анализ работы важнейших сортировочных станций сети ОАО РЖД.xlsb"
+-- Структура: для каждой станции пара строк — суточный показатель и ср/сут.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS spravki_sort_stations (
+    id              serial PRIMARY KEY,
+    report_date     date NOT NULL,
+    road            varchar(20),            -- ОКТ / МОСК / ГОРЬК / ...
+    station         varchar(100) NOT NULL,  -- название станции (СПБ-СОРТ-МОС, ЮДИНО, ...)
+    period          varchar(10) NOT NULL,   -- 'сут.' | 'ср/сут'
+    working_park    numeric(10,1),          -- рабочий парк на 18:00
+    rosp_total      numeric(10,1),          -- к роспуску всего
+    arrived_trains  numeric(10,1),          -- прибыло поездов
+    refused_trains  numeric(10,1),          -- расф. поездов
+    rosp_no_pere    numeric(10,1),          -- к роспуску без пере
+    formed_trains   numeric(10,1),          -- сформировано поездов
+    sent_trains     numeric(10,1),          -- отправлено поездов
+    avg_weight      numeric(10,1),          -- средний вес
+    avg_length      numeric(10,1),          -- средняя условная длина
+    raw_extra       jsonb                   -- остальные числовые поля (для отладки)
+);
+CREATE INDEX IF NOT EXISTS idx_sortstan_date_road ON spravki_sort_stations (report_date, road);
+COMMENT ON TABLE spravki_sort_stations IS
+  'Работа важнейших сортировочных станций сети ОАО РЖД: рабочий парк, '
+  'роспуск, расформирование, формирование, средний вес и длина состава. '
+  'period: сут.=за сутки, ср/сут=среднесуточно. Источник справок к ГЦУ.';
+
