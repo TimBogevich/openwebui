@@ -287,10 +287,25 @@ def describe(table: str = "") -> str:
                 for name, dtype, comment in cols:
                     out.append(f"  • {name} ({dtype})" + (f" — {comment}" if comment else ""))
 
-                # 2) per-column profile: ranges, low-cardinality value lists, sample values
+                # 2) per-column profile — only for columns the model actually needs to
+                # know enumerated values for (road names, responsible codes, units).
+                # Audit/internal columns (cell_ref, source_row, source_sheet, created_at,
+                # indicator_number, parent_indicator, id, report_id, sheet_id) and all
+                # pure numeric ranges are hidden — they add tokens without helping SQL writing.
+                ОБРАЗЦЫ_SKIP = frozenset({
+                    "id", "report_id", "sheet_id", "cell_ref", "source_row",
+                    "source_sheet", "created_at", "indicator_number",
+                    "parent_indicator", "is_priority", "section_roman",
+                    "day_fact", "day_to_plan", "day_to_prev_year",
+                    "month_fact", "month_to_plan", "month_to_prev_yr",
+                    "year_fact", "year_to_plan", "year_to_prev_yr",
+                    "zone", "populates", "name", "category",
+                })
                 out.append("")
-                out.append("ОБРАЗЦЫ ДАННЫХ (из реальных строк, для понимания соглашений хранения):")
+                out.append("ЗНАЧЕНИЯ (для написания WHERE-условий):")
                 for name, dtype, _ in cols:
+                    if name in ОБРАЗЦЫ_SKIP:
+                        continue
                     col = f'"{name}"'
                     try:
                         if dtype in ("date", "timestamp without time zone", "timestamp with time zone",
