@@ -1,0 +1,518 @@
+[
+  {
+    "q": "Филиалы ОАО «РЖД», допустившие максимальное количество задержек в апреле 2026 г.",
+    "calls": [
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "reports"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "metrics"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "spravki_delays"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT road FROM metrics WHERE name % 'задержк' ORDER BY similarity(name, 'задержк') DESC LIMIT 10;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'задержк' ORDER BY similarity(name, 'задержк') DESC LIMIT 10;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'задержк' ORDER BY similarity(name, 'задержк') DESC LIMIT 10;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name, similarity(name, 'задержк') FROM metrics WHERE name % 'задержк' ORDER BY 2 DESC LIMIT 10;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'опозд' OR name % 'поезд' ORDER BY similarity(name, 'опозд') DESC LIMIT 10;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'задержк' OR name % 'опозд';"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT report_date FROM reports WHERE report_date >= '2026-04-01' AND report_date <= '2026-04-30';"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'задерж' OR name % 'опоздан' OR name % 'срок доставки';"
+        }
+      }
+    ],
+    "answer": null,
+    "sec": 12.2,
+    "err": "turn-cap",
+    "orig_q_num": 2
+  },
+  {
+    "q": "Сумма задержек (риск предъявления за просрочку доставки) по всем филиалам ОАО «РЖД» на 12.03.2026.",
+    "calls": [
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "reports"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "metrics"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "spravki_delays"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'просрочк' OR name % 'предъявл' OR name % 'задержк' ORDER BY similarity(name, 'просрочк') DESC LIMIT 20;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'просрочк' OR name % 'предъявл' OR name % 'задержк' ORDER BY similarity(name, 'просрочк') DESC LIMIT 20;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name, similarity(name, 'просрочк') FROM metrics WHERE name % 'просрочк' OR name % 'предъявл' OR name % 'задержк' ORDER BY similarity DESC LIMIT 20;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'риск' OR name % 'срок доставк' OR name % 'просрочн' ORDER BY similarity(name, 'риск') DESC LIMIT 20;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name, similarity(name, 'риск') FROM metrics WHERE name % 'риск' OR name % 'срок доставк' OR name % 'просрочн' ORDER BY similarity DESC LIMIT 20;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'срок' OR name % 'доставк' ORDER BY similarity(name, 'срок') DESC LIMIT 20;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name, similarity(name, 'срок') FROM metrics WHERE name % 'срок' OR name % 'доставк' ORDER BY similarity DESC LIMIT 20;"
+        }
+      }
+    ],
+    "answer": null,
+    "sec": 10.3,
+    "err": "turn-cap",
+    "orig_q_num": 4
+  },
+  {
+    "q": "Количество задержанных поездов по причине нет локомотива перевозчика (код 22) на 12.03.2026 по дорогам.",
+    "calls": [
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "metrics"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "spravki_delays"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT road_code, trains \nFROM spravki_delays \nWHERE report_date = '2026-03-12' \n  AND delay_code = '22' \nORDER BY road_code;"
+        }
+      }
+    ],
+    "answer": "\n\n## Справка о задержанных поездах по причине №22 (нет локомотива перевозчика) на 12.03.2026\n\n| Дорога | Количество поездов |\n|--------|-------------------|\n| ВСБ    | 5                 |\n| ГОР    | 2                 |\n| ДВС    | 15                |\n| ЗСБ    | 1                 |\n| СВР    | 4                 |\n| **ИТОГО по сети** | **27**          |\n\nНаибольшее количество задержанных поездов зарегистрировано на дороге Дальневосточной (ДВС) — 15 поездов. На других дорогах показатель варьируется от 1 до 5 поездов.",
+    "sec": 6.7,
+    "err": null,
+    "orig_q_num": 8
+  },
+  {
+    "q": "Назови три дороги у которых 12 марта 2026 было больше всего задержанных поездов по коду 1 (неприём грузополучателем). Приведи значения для каждой.",
+    "calls": [
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "metrics"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "reports"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "spravki_delays"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT road_code, trains \nFROM spravki_delays \nWHERE report_date = '2026-03-12' \n  AND delay_code = '1' \n  AND road_code != 'СЕТЬ'\nORDER BY trains DESC \nLIMIT 3"
+        }
+      }
+    ],
+    "answer": "\n\nПо состоянию на 12 марта 2026 года три дороги с наибольшим количеством задержанных поездов по коду причины «Неприём грузополучателем» (код 1):\n\n| Дорога | Код | Задержанные поезда |\n|--------|-----|-------------------|\n| СКВ    | СКВ | 63                |\n| ДВС    | ДВС | 17                |\n| ПРВ    | ПРВ | 16                |\n\nДанные получены из таблицы `spravki_delays` (справка к ежедневному докладу ГЦУ).",
+    "sec": 6.6,
+    "err": null,
+    "orig_q_num": 17
+  },
+  {
+    "q": "Назови топ-3 подразделения ОАО РЖД по числу фактов опоздания грузовых поездов за апрель 2026. Приведи числа нарастающим итогом на 30 апреля.",
+    "calls": [
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "reports"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "metrics"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'опоздание груз' ORDER BY similarity(name, 'опоздание груз') DESC LIMIT 20;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT name FROM metrics WHERE name % 'опоздание груз' LIMIT 20;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'опоздание' LIMIT 30;"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "spravki_delays"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'поезд' LIMIT 30;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT section_roman, category FROM metrics ORDER BY section_roman, category;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'факт' LIMIT 30;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT name FROM metrics WHERE section_roman = 'I' AND category LIKE '%ЭКСПЛУАТАЦИОННАЯ РАБОТА%' ORDER BY name LIMIT 50;"
+        }
+      }
+    ],
+    "answer": null,
+    "sec": 10.7,
+    "err": "turn-cap",
+    "orig_q_num": 19
+  },
+  {
+    "q": "Какова сумма исков к ОАО РЖД о взыскании пени за просрочку доставки грузов по состоянию на 12 марта 2026 — за месяц и нарастающим?",
+    "calls": [
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "reports"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "metrics"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT indicator_number, parent_indicator, name, unit, zone, month_fact, year_fact\nFROM metrics m\nJOIN reports r ON m.report_id = r.id\nWHERE r.report_date = '2026-03-12'\n  AND (m.name % 'иск пень просрочк доставк')\nORDER BY similarity(m.name, 'иск пень просрочк доставк') DESC\nLIMIT 20;"
+        }
+      }
+    ],
+    "answer": "\n\nПо состоянию на **12 марта 2026 г.** сумма исков к ОАО «РЖД» о взыскании пени за просрочку доставки грузов составляет:\n\n| Период | Сумма, млн руб. |\n|--------|-----------------|\n| За месяц (март) | **2127,9** |\n| Нарастающим итогом (январь–март) | **4158,2** |\n\nПоказатель: «Иски к ОАО \"РЖД\" о взыскании пени за просрочку доставки грузов» (код 24.3.1).",
+    "sec": 6.7,
+    "err": null,
+    "orig_q_num": 21
+  },
+  {
+    "q": "Какая дорога показала наибольшую скорость доставки грузовых отправок в груженых вагонах на 1 марта 2022? Покажи топ-3.",
+    "calls": [
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "metrics"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE name % 'скорость доставки грузовых отправок' ORDER BY similarity(name, 'скорость доставки грузовых отправок') DESC LIMIT 10"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT name FROM metrics WHERE name % 'скорость доставки грузовых отправок' ORDER BY similarity(name, 'скорость доставки грузовых отправок') DESC LIMIT 10"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "reports"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT r.id, m.name, m.road, m.day_fact, m.unit \nFROM reports r \nJOIN metrics m ON r.id = m.report_id \nWHERE r.report_date = '2022-03-01' \n  AND m.name % 'скорость доставки груженых отправок'\nORDER BY similarity(m.name, 'скорость доставки груженых отправок') DESC\nLIMIT 20"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT r.id, m.name, m.road, m.day_fact, m.unit \nFROM reports r \nJOIN metrics m ON r.id = m.report_id \nWHERE r.report_date = '2022-03-01' \n  AND m.name % 'скорость доставки груженых отправок'\nORDER BY similarity(m.name, 'средняя скорость доставки груз. отправок в груж. вагонах') DESC, m.road NULLS LAST\nLIMIT 50"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT name FROM metrics WHERE report_date = '2022-03-01' AND name % 'скорость доставки' ORDER BY similarity(name, 'скорость доставки') DESC LIMIT 20"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT DISTINCT m.name FROM metrics m JOIN reports r ON r.id = m.report_id WHERE r.report_date = '2022-03-01' AND m.name % 'скорость доставки' ORDER BY similarity(m.name, 'скорость доставки') DESC LIMIT 20"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT m.name FROM metrics m JOIN reports r ON r.id = m.report_id WHERE r.report_date = '2022-03-01' AND m.name % 'скорость доставки' ORDER BY similarity(m.name, 'скорость доставки') DESC LIMIT 20"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT m.name FROM metrics m JOIN reports r ON r.id = m.report_id WHERE r.report_date = '2022-03-01' AND m.name % 'скорость' ORDER BY similarity(m.name, 'скорость') DESC LIMIT 30"
+        }
+      }
+    ],
+    "answer": null,
+    "sec": 14.1,
+    "err": "turn-cap",
+    "orig_q_num": 30
+  },
+  {
+    "q": "Сколько отказов техсредств 1-2 категории зафиксировано на Октябрьской и Свердловской дорогах по суточной справке за 12.03.2026? Сравни с 2025 годом.",
+    "calls": [
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "metrics"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "report_comments"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "spravki_failures"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT dept, failures_2025, failures_2026, change_pct, resolved, registered, investigated FROM spravki_failures WHERE report_date = '2026-03-12' AND dept IN ('Октябрьская', 'Свердловская') ORDER BY dept"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT dept, failures_2025, failures_2026, change_pct, resolved, registered, investigated FROM spravki_failures WHERE report_date = '2026-03-12' ORDER BY dept"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT name, road, day_fact FROM metrics WHERE report_id IN (SELECT id FROM reports WHERE report_date = '2026-03-12') AND name % 'отказ' ORDER BY similarity(name, 'отказ техсредств 1-2 категории') DESC LIMIT 10"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT name, road, day_fact FROM metrics WHERE report_id IN (SELECT id FROM reports WHERE report_date = '2026-03-12') AND name % 'отказ' OR name % 'failure' ORDER BY similarity(name, 'отказ техсредств 1-2 категории') DESC LIMIT 15"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT dept, failures_2025, failures_2026, change_pct, resolved, registered, investigated FROM spravki_failures WHERE report_date = '2026-03-12' AND (dept LIKE '%Октябрьская%' OR dept LIKE '%Свердловская%')"
+        }
+      }
+    ],
+    "answer": "\n\n## Справка: отказы техсредств 1–2 категории\n\n**Дата отчёта:** 12.03.2026  \n**Дороги:** Октябрьская, Свердловская\n\n### Фактические данные за 12.03.2026\n\n| Дорога | Отказов (факт) | Зарегистрировано | Расследовано |\n|--------|----------------|------------------|--------------|\n| Октябрьская | **28** (13 + 15) | 38 | 8 |\n| Свердловская | **46** (23 + 23) | 46 | 10 |\n\n### Динамика к аналогичному периоду предыдущего года\n\nПрямое сравнение по абсолютным значениям за 12.03.2025 невозможно — данные за этот период в справке отсутствуют (таблица `spravki_failures` содержит записи только за 2026-03-12).\n\nОднако в отчёте указана относительная динамика (`change_pct`):\n- **Октябрьская:** рост на **+18…+20%** к предыдущему году\n- **Свердловская:** рост на **+28%** к предыдущему году\n\n### Выводы\n1. За 12.03.2026 зафиксировано **74 отказа** техсредств 1–2 категории на двух дорогах (Октябрьская — 28, Свердловская — 46).\n2. Относительная динамика указывает на рост отказов по сравнению с аналогичным периодом 2025 года: +18…+20% для Октябрьской и +28% для Свердловской дороги.\n3. Для проведения точного сравнения по абсолютным значениям требуется наличие данных за 12.03.2025 в справке `spravki_failures`.",
+    "sec": 20.1,
+    "err": null,
+    "orig_q_num": 38
+  },
+  {
+    "q": "Каков процент выполнения расписания грузовых поездов по прибытию на конечную станцию на 12 марта 2026? Разбери все 4 компонента (4.1.1–4.1.4).",
+    "calls": [
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "reports"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "metrics"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT indicator_number, name, unit, day_fact, zone FROM metrics WHERE report_id IN (SELECT id FROM reports WHERE report_date = '2026-03-12') AND name % 'выполнение расписания грузовых поездов' ORDER BY similarity(name, 'выполнение расписания грузовых поездов') DESC LIMIT 20"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT indicator_number, name, unit, day_fact, zone FROM metrics WHERE report_id IN (SELECT id FROM reports WHERE report_date = '2026-03-12') AND parent_indicator = '4.1' ORDER BY similarity(indicator_number, '4.1.') DESC LIMIT 20"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT indicator_number, name, road, day_fact, zone FROM metrics WHERE report_id IN (SELECT id FROM reports WHERE report_date = '2026-03-12') AND parent_indicator = '4.1' AND road IS NOT NULL ORDER BY indicator_number, road LIMIT 50"
+        }
+      }
+    ],
+    "answer": "\n\n## Исполнение расписания грузовых поездов по прибытию на конечную станцию за 12 марта 2026 г.\n\n**Общий показатель 4.1 «Выполнение расписания движения грузовых поездов — общие характеристики»:** 60,8% (жёлтая зона).\n\n### Детализация по компонентам:\n\n| Код | Показатель | Факт, % | Зона |\n|-----|------------|---------|------|\n| **4.1.1** | Отправление с начальной станции | 95,2 | Зелёная |\n| **4.1.2** | Прибытие на пункты в пути следования | 38,9 | Зелёная |\n| **4.1.3** | Отправление с пунктов в пути следования | 74,0 | Зелёная |\n| **4.1.4** | **Прибытие на конечную станцию** | **46,4** | Зелёная |\n\n### Ключевые наблюдения:\n\n1. **Показатель 4.1.4 (прибытие на конечную станцию)** составляет 46,4%. Несмотря на относительно низкое абсолютное значение, показатель находится в зелёной зоне нормирования.\n2. Наибольшее отклонение от плана наблюдается по компоненту **4.1.2** — прибытие на пункты в пути следования (38,9%), что указывает на проблемы с обеспечением расписания на промежуточных участках.\n3. Компонент **4.1.1** демонстрирует наилучший результат среди всех подкомпонентов (95,2%), что свидетельствует об удовлетворительной организации отправления поездов со станций отправления.\n\nДанные по региональной разбивке для данного раздела отчёта отсутствуют.",
+    "sec": 11.9,
+    "err": null,
+    "orig_q_num": 40
+  },
+  {
+    "q": "Как менялся процент выполнения расписания по прибытию на конечную станцию в апреле 2026 — покажи значения на 1, 15 и 30 апреля.",
+    "calls": [
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "reports"
+        }
+      },
+      {
+        "name": "gcu-postgres_describe",
+        "args": {
+          "table": "metrics"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT indicator_number, name, unit FROM metrics WHERE name % 'выполнения расписания по прибытию' ORDER BY similarity(name, 'выполнения расписания по прибытию') DESC LIMIT 10;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT indicator_number, name, unit FROM metrics WHERE name % 'конечную станцию' OR name % 'прибытию' ORDER BY similarity(name, 'прибытию на конечную станцию') DESC LIMIT 10;"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT id, report_date FROM reports WHERE report_date IN ('2026-04-01', '2026-04-15', '2026-04-30');"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT m.day_fact, m.day_to_plan, r.report_date FROM metrics m JOIN reports r ON m.report_id = r.id WHERE r.report_date = '2026-04-01' AND m.indicator_number = '4.1.4';"
+        }
+      },
+      {
+        "name": "gcu-postgres_query",
+        "args": {
+          "sql": "SELECT m.day_fact, m.day_to_plan, r.report_date FROM metrics m JOIN reports r ON m.report_id = r.id WHERE r.report_date IN ('2026-04-15', '2026-04-30') AND m.indicator_number = '4.1.4';"
+        }
+      }
+    ],
+    "answer": "\n\n## Процент выполнения расписания по прибытию на конечную станцию (показатель 4.1.4)\n\n| Дата | Факт, % | Отклонение от плана |\n|------|---------|---------------------|\n| 01.04.2026 | 46,31 | — |\n| 15.04.2026 | 46,29 | — |\n| 30.04.2026 | 45,55 | — |\n\n**Динамика:** снижение показателя на 0,76 п.п. за месяц (с 46,31% до 45,55%). Отклонения от плановых значений в отчетах не рассчитаны.",
+    "sec": 11.3,
+    "err": null,
+    "orig_q_num": 46
+  }
+]
