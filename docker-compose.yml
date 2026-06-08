@@ -24,6 +24,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.mcp
+    pull_policy: build
     container_name: gcu-mcp
     restart: unless-stopped
     environment:
@@ -38,6 +39,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.upload
+    pull_policy: build
     container_name: gcu-upload
     restart: unless-stopped
     environment:
@@ -57,6 +59,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.watch
+    pull_policy: build
     container_name: gcu-watch
     restart: unless-stopped
     environment:
