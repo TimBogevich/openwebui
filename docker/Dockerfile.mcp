@@ -4,5 +4,6 @@ RUN pip install --no-cache-dir mcp psycopg[binary] uvicorn fastapi
 # Patch MCP SDK: allow any Host header (Docker inter-container networking uses container hostname)
 RUN python3 -c "p='/usr/local/lib/python3.11/site-packages/mcp/server/transport_security.py'; t=open(p).read(); t=t.replace('return Response(\"Invalid Host header\", status_code=421)','pass  # patched: allow any host'); open(p,'w').write(t)"
 COPY gcu/mcp_postgres_server.py .
+COPY gcu/dashboard.py .
 EXPOSE 8808
 CMD ["python", "mcp_postgres_server.py"]

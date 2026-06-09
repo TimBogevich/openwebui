@@ -644,6 +644,35 @@ def search_knowledge(query: str, k: int = 3, collection: str = "") -> str:
     return "\n".join(out)
 
 
+# ---------------------------------------------------------------------------
+# gcu_dashboard — генерация оперативного дашборда ЦГЦУ
+# ---------------------------------------------------------------------------
+# Builds a self-contained static HTML file with embedded data and Chart.js
+# charts. No server needed — the file opens directly in any browser on
+# Windows (file://). Returns the filesystem path.
+# ---------------------------------------------------------------------------
+@mcp.tool()
+def gcu_dashboard(period: str = "апрель 2026") -> str:
+    """Генерирует статический HTML-дашборд ЦГЦУ по отчётам за апрель 2026.
+
+    Создаёт самодостаточный HTML-файл с графиками (Chart.js), таблицами
+    и сводными карточками в директории ~/Desktop/ЦГЦУ отчеты/index.html.
+    Файл открывается напрямую в браузере — сервер не требуется.
+
+    Используй один раз за сессию. Если дашборд уже собран — скажи
+    пользователю, что файл готов, и верни путь.
+
+    :param period: период отчёта (по умолчанию «апрель 2026»)
+    :return: полный путь к index.html
+    """
+    try:
+        from gcu.dashboard import build
+    except ImportError:
+        import dashboard as _db
+        return _db.build()
+    return build()
+
+
 if __name__ == "__main__":
     import uvicorn
     print("Starting GCU MCP server on http://0.0.0.0:8808/mcp (Streamable HTTP)")
