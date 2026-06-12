@@ -30,3 +30,4 @@ db/*.bak.*
 gcu/*.bak
 gcu/*.bak.*
 ~$*
+backups/

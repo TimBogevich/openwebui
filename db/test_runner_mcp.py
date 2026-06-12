@@ -74,6 +74,7 @@ def run_one(num, question):
         S._consec_zero[0] = 0
         S._find_calls[0] = 0
         S._describe_calls[0] = 0
+        S._query_calls[0] = 0
     except Exception:
         pass
     sys_prompt = get_prompt()

@@ -127,6 +127,18 @@ _ZERO_BLOCK_AT = 2
 _describe_calls = [0]
 _DESCRIBE_BLOCK_AT = 2
 
+# Query-volume / wandering guard: counts TOTAL query() calls per question,
+# regardless of whether the SQL is unique or returns rows. This is the missing
+# lever behind "the model gets stuck": cap-hit traces issue 6-8 DIFFERENT,
+# non-zero queries (each dodges the identical-query and zero-result guards) and
+# never commit to an answer — the model already has the data by query 3-4 but
+# keeps re-exploring metrics/spravki until the turn cap. Answered questions use
+# ≤3 queries (avg 1.3); cap-hits average 6.5. After _QVOL_WARN we nudge, after
+# _QVOL_BLOCK we hard-stop with "answer from what you have".
+_query_calls = [0]
+_QVOL_WARN = 4    # 5th query -> nudge
+_QVOL_BLOCK = 6   # 7th query -> hard stop
+
 
 def _qnorm(sql):
     """Normalize SQL so cosmetic differences don't dodge the guard."""
@@ -338,6 +350,17 @@ def query(sql: str) -> str:
     :param sql: SQL SELECT/WITH (только чтение)
     :return: результат в текстовом виде
     """
+    # Query-volume / wandering guard (the "gets stuck" fix). Fires BEFORE the
+    # identical-query guard so it catches the case where every query is unique.
+    _query_calls[0] += 1
+    if _query_calls[0] > _QVOL_BLOCK:
+        _query_calls[0] = 0   # reset so the model can resume after answering
+        return ("⛔ СТОП: ты уже выполнил много запросов к БД по этому вопросу. "
+                "Нужные данные почти наверняка уже среди полученных результатов. "
+                "ПРЕКРАТИ запросы и сформулируй ОТВЕТ сейчас на основе того, что есть. "
+                "Если какого-то одного числа действительно не хватает — назови ответ "
+                "по имеющимся данным и укажи, чего именно не хватило. Не продолжай поиск.")
+
     # Anti-loop guard: catch the same SELECT being re-run instead of answering.
     level, prior = _qguard_check(sql)
     if level == 2:
@@ -372,6 +395,9 @@ def query(sql: str) -> str:
     if level == 1:
         out = ("⚠️ Внимание: ты уже выполнял ЭТОТ ЖЕ запрос — результат тот же. "
                "Переходи к ОТВЕТУ или измени запрос, не повторяй его снова.\n\n" + out)
+    elif _query_calls[0] >= _QVOL_WARN:
+        out = ("⚠️ Внимание: уже сделано несколько запросов. Скорее всего данных "
+               "достаточно — переходи к ОТВЕТУ, а не к новым запросам.\n\n" + out)
     return out
 
 
