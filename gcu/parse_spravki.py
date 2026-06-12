@@ -253,17 +253,22 @@ def parse_locomotives(path, report_date):
         nums = [v for v in row if isinstance(v, (int, float)) and v != 0 or isinstance(v, str) and v.strip() in ('+/-', '/')]
         numeric = [v for v in row if isinstance(v, (int, float))]
 
+        # Skip the transposed тепловоз sub-table (rows labelled План/Факт/+/-/Дорога
+        # where roads are columns, not rows — different shape, handled elsewhere).
+        if fl.strip() in ('план', 'факт', '+/-', 'дорога'):
+            continue
+
         if len(numeric) >= 2 and first and not any(kw in fl for kw in ['содержание','анализ','таблиц','страниц','справк','резерв','общий','эс5','вл1']):
-            # try to extract plan/fact/delta triplets separated by '/'
-            # row structure: road, plan, '/', fact, '+/-' OR plan, '/', fact repeating
+            # FIXED layout: План[всего=1 /груз=3]  Факт[всего=4 /груз=6]  +/-[всего=7 /груз=9].
+            # The report tracks ГРУЗОВОЕ движение → plan=[3], fact=[6], delta=[9].
             road_name = first.strip()
-            # collect numeric positions
-            num_vals = [(i, v) for i, v in enumerate(row) if isinstance(v, (int, float))]
-            # first two non-slash numbers are plan, fact
-            if len(num_vals) >= 2:
-                plan = num_vals[0][1] if num_vals else None
-                fact = num_vals[1][1] if len(num_vals) > 1 else None
-                delta = num_vals[2][1] if len(num_vals) > 2 else None
+
+            def g(i):
+                v = row[i] if i < len(row) else None
+                return int(v) if isinstance(v, (int, float)) else None
+
+            plan, fact, delta = g(3), g(6), g(9)
+            if plan is not None or fact is not None:
                 records.append(dict(
                     report_date=report_date,
                     section=current_section,
