@@ -157,8 +157,12 @@ def parse_failures(path, report_date):
 
     records = []
     for row in rows[data_start:]:
-        dept = _clean(row[0]) if len(row) > 0 else None
-        if not dept or dept.startswith('Раздел') or dept.startswith('ИТОГО') and len(dept) > 20:
+        # Label sits in col[0] for road rows, but col[1] for complex rows
+        # (локомотивный/инфраструктурный комплекс) where col[0] is empty.
+        dept = _clean(row[0]) if len(row) > 0 and row[0] else None
+        if not dept and len(row) > 1 and row[1]:
+            dept = _clean(row[1])
+        if not dept or dept.startswith('Раздел') or (dept.startswith('ИТОГО') and len(dept) > 20):
             continue
         # skip section headers (all caps long strings)
         if dept.isupper() and len(dept) > 30:
@@ -171,12 +175,18 @@ def parse_failures(path, report_date):
 
         def gf(i):
             v = row[i] if i < len(row) else None
+            # Source mixes formats: text "38,46%" vs float fraction 0.322.
+            # Excel stores %-formatted cells as fractions → scale to percent.
+            if isinstance(v, float):
+                return round(v * 100, 2)
             try: return float(str(v).replace('%','').replace(',','.').strip())
             except: return None
 
-        f25, f26 = gi(1), gi(2)
-        pct = gf(3)
-        resolved, registered, investigated = gi(4), gi(5), gi(6)
+        # The dept name cell is merged across col[0:1], so the numeric block
+        # always starts at index [2]: 2025, 2026, +/-%, resolved, registered, investigated.
+        f25, f26 = gi(2), gi(3)
+        pct = gf(4)
+        resolved, registered, investigated = gi(5), gi(6), gi(7)
 
         if f25 is None and f26 is None:
             continue
@@ -276,31 +286,37 @@ def parse_port_stations(path, report_date, road_code):
     rows = list(ws.iter_rows(values_only=True))
     wb.close()
 
+    # FIXED column layout (0-based tuple indices), header occupies rows 0-3:
+    #   [0] station            [1] погрузка всего   [2] погрузка ср/сут
+    #   [3] вагоны норма        [4] вагоны факт      [5] отставл. поездов
+    #   [6] на дороге норма     [7] на дороге факт   [8] на дороге отставл.
+    #   [9] налич. на станции   [10] перераб. спос.  [11] ВЫГРУЗКА на 18:00
+    #   [12] выгрузка ср/сут    [13] налич. 06:00    [14] ...
     records = []
-    # find data rows: rows with a station name + numeric values
-    # header is top 5-6 rows
-    for row in rows[5:]:
-        station = _clean(row[0]) if len(row) > 0 else None
+    for row in rows[4:]:
+        station = _clean(row[0]) if len(row) > 0 and row[0] else None
         if not station or len(station) < 3:
             continue
-        # skip header-like rows
-        if any(w in station.lower() for w in ['справ','погруз','наличи','всего','итого','норма','план','факт','дорог']):
-            if station.upper() == station:
-                continue
-
-        numerics = [_num(v) for v in row[1:] if isinstance(v, (int, float))]
-        if len(numerics) < 2:
+        # skip leftover header/label rows
+        if any(w in station.lower() for w in ['справ', 'погруз', 'налич', 'норма', 'перер']):
             continue
 
-        load_plan = numerics[0] if len(numerics) > 0 else None
-        load_fact = numerics[1] if len(numerics) > 1 else None
-        detained  = numerics[2] if len(numerics) > 2 else None
-        wagons_total = numerics[3] if len(numerics) > 3 else None
-        wagons_road  = numerics[4] if len(numerics) > 4 else None
+        def g(i):
+            return _num(row[i]) if i < len(row) and isinstance(row[i], (int, float)) else None
+
+        load_plan    = g(1)    # погрузка всего
+        load_fact    = g(11)   # ВЫГРУЗКА факт на 18:00
+        capacity     = g(10)   # перерабатывающая способность
+        wagons_total = g(4)    # наличие вагонов факт
+        wagons_road  = g(7)    # на дороге факт
+        detained     = g(5)    # отставленных поездов
+
+        if load_fact is None and capacity is None and wagons_total is None:
+            continue
 
         records.append(dict(
             report_date=report_date, road=road_code, station=station,
-            load_plan=load_plan, load_fact=load_fact,
+            load_plan=load_plan, load_fact=load_fact, capacity=capacity,
             wagons_total=int(wagons_total) if wagons_total else None,
             wagons_road=int(wagons_road) if wagons_road else None,
             detained_trains=int(detained) if detained else None,
@@ -390,12 +406,12 @@ def write_locomotives(conn, records):
 
 def write_port_stations(conn, records):
     sql = """INSERT INTO spravki_port_stations
-             (report_date,road,station,load_plan,load_fact,wagons_total,wagons_road,detained_trains)
-             VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"""
+             (report_date,road,station,load_plan,load_fact,capacity,wagons_total,wagons_road,detained_trains)
+             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     with conn.cursor() as cur:
         for r in records:
             cur.execute(sql, (r['report_date'],r['road'],r['station'],
-                              r['load_plan'],r['load_fact'],r['wagons_total'],
+                              r['load_plan'],r['load_fact'],r['capacity'],r['wagons_total'],
                               r['wagons_road'],r['detained_trains']))
 
 

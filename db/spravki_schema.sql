@@ -78,15 +78,19 @@ CREATE TABLE IF NOT EXISTS spravki_port_stations (
     report_date   date NOT NULL,
     road          varchar(20),     -- 'ДВОСТ','ОКТ','СКАВ'
     station       varchar(200),
-    load_plan     numeric(10,1),   -- погрузка норма
-    load_fact     numeric(10,1),   -- погрузка факт
+    load_plan     numeric(10,1),   -- погрузка норма (ср/сут)
+    load_fact     numeric(10,1),   -- ВЫГРУЗКА факт на 18:00
+    capacity      numeric(10,1),   -- перерабатывающая способность (норма выгрузки)
     wagons_total  int,             -- наличие вагонов всего
     wagons_road   int,             -- на дороге
     detained_trains int            -- отставленных поездов
 );
 CREATE INDEX IF NOT EXISTS idx_ports_date ON spravki_port_stations (report_date);
+-- additive migration for existing DBs (no-op if column already present)
+ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS capacity numeric(10,1);
 COMMENT ON TABLE spravki_port_stations IS
-  'Работа припортовых станций: погрузка план/факт, наличие вагонов, отставленные поезда. '
+  'Работа припортовых станций: ВЫГРУЗКА факт (load_fact) против перерабатывающей способности (capacity), '
+  'наличие вагонов, отставленные поезда — для вопросов об использовании перерабатывающей способности портов. '
   'Источник справок к ГЦУ. Дороги: ДВОСТ, ОКТ, СКАВ. Связывается по report_date.';
 
 -- ---------------------------------------------------------------------------
