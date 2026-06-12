@@ -31,6 +31,10 @@ services:
       GCU_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
     ports:
       - "8808:8808"
+    volumes:
+      # Dashboard writes to ~/Desktop/ЦГЦУ отчеты/ (root => /root/Desktop).
+      # Mount the current Windows user's Desktop there so the HTML appears on it.
+      - "${USERPROFILE}/Desktop:/root/Desktop/"
     depends_on:
       postgres:
         condition: service_healthy

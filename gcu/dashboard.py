@@ -7,8 +7,16 @@ from __future__ import annotations
 
 import json
 import os
+from decimal import Decimal
 
 import psycopg
+
+
+def _json_default(o):
+    """Make psycopg Decimal values (from SQL trunc/numeric) JSON-serializable."""
+    if isinstance(o, Decimal):
+        return float(o)
+    raise TypeError(f"Object of type {type(o).__name__} is not JSON serializable")
 
 DB_URL = os.environ.get(
     "GCU_DATABASE_URL",
@@ -31,8 +39,9 @@ def _fetch_dashboard_data():
         with conn.cursor() as cur:
             # --- April date range ---
             cur.execute(
-                "SELECT min(report_date), max(report_date), count(DISTINCT report_date) "
-                "FROM metrics WHERE report_date BETWEEN '2026-04-01' AND '2026-04-30'"
+                "SELECT min(r.report_date), max(r.report_date), count(DISTINCT r.report_date) "
+                "FROM metrics m JOIN reports r ON m.report_id = r.id "
+                "WHERE r.report_date BETWEEN '2026-04-01' AND '2026-04-30'"
             )
             dmin, dmax, ndays = cur.fetchone()
             data["date_min"] = str(dmin) if dmin else "2026-04-01"
@@ -62,10 +71,11 @@ def _fetch_dashboard_data():
             for label, _, unit in key_indicators:
                 try:
                     cur.execute(
-                        "SELECT report_date, day_fact FROM metrics "
-                        "WHERE report_date BETWEEN '2026-04-01' AND '2026-04-30' "
-                        "AND lower(name) = %s AND road IS NULL "
-                        "ORDER BY report_date", (label.lower(),)
+                        "SELECT r.report_date, m.day_fact FROM metrics m "
+                        "JOIN reports r ON m.report_id = r.id "
+                        "WHERE r.report_date BETWEEN '2026-04-01' AND '2026-04-30' "
+                        "AND lower(m.name) = %s AND m.road IS NULL "
+                        "ORDER BY r.report_date", (label.lower(),)
                     )
                     rows = cur.fetchall()
                     if rows:
@@ -79,8 +89,9 @@ def _fetch_dashboard_data():
                 "SELECT m.responsible, coalesce(d.name, m.responsible) as dept_name, "
                 "m.zone, count(*) as cnt "
                 "FROM metrics m "
+                "JOIN reports r ON m.report_id = r.id "
                 "LEFT JOIN dept_codes d ON d.code = m.responsible "
-                "WHERE m.report_date = (SELECT max(report_date) FROM metrics "
+                "WHERE r.report_date = (SELECT max(report_date) FROM reports "
                 "  WHERE report_date BETWEEN '2026-04-01' AND '2026-04-30') "
                 "AND m.zone IN (0,1,2) "
                 "GROUP BY m.responsible, d.name, m.zone "
@@ -90,13 +101,14 @@ def _fetch_dashboard_data():
 
             # --- Top red-zone indicators ---
             cur.execute(
-                "SELECT name, responsible, unit, trunc(day_to_plan::numeric * 100, 2) as plan_dev_pct, "
-                "trunc(day_fact::numeric, 2) as fact "
-                "FROM metrics "
-                "WHERE report_date = (SELECT max(report_date) FROM metrics "
+                "SELECT m.name, m.responsible, m.unit, trunc(m.day_to_plan::numeric * 100, 2) as plan_dev_pct, "
+                "trunc(m.day_fact::numeric, 2) as fact "
+                "FROM metrics m "
+                "JOIN reports r ON m.report_id = r.id "
+                "WHERE r.report_date = (SELECT max(report_date) FROM reports "
                 "  WHERE report_date BETWEEN '2026-04-01' AND '2026-04-30') "
-                "AND zone = 2 AND road IS NULL "
-                "ORDER BY day_to_plan ASC LIMIT 15"
+                "AND m.zone = 2 AND m.road IS NULL "
+                "ORDER BY m.day_to_plan ASC LIMIT 15"
             )
             data["red_indicators"] = [
                 [r[0], r[1], r[2], r[3], r[4]] for r in cur.fetchall()
@@ -104,10 +116,11 @@ def _fetch_dashboard_data():
 
             # --- Personnel: key dates ---
             cur.execute(
-                "SELECT report_date, day_fact FROM metrics "
-                "WHERE report_date IN ('2026-04-01','2026-04-17') "
-                "AND lower(name) = lower('численность персонала на рабочих местах') "
-                "AND road IS NULL ORDER BY report_date"
+                "SELECT r.report_date, m.day_fact FROM metrics m "
+                "JOIN reports r ON m.report_id = r.id "
+                "WHERE r.report_date IN ('2026-04-01','2026-04-17') "
+                "AND lower(m.name) = lower('численность персонала на рабочих местах') "
+                "AND m.road IS NULL ORDER BY r.report_date"
             )
             personnel = {}
             for dt, val in cur.fetchall():
@@ -116,22 +129,24 @@ def _fetch_dashboard_data():
 
             # --- Delivery trend ---
             cur.execute(
-                "SELECT report_date, trunc(day_fact::numeric, 2), "
-                "trunc(day_to_plan::numeric * 100, 2) "
-                "FROM metrics "
-                "WHERE report_date BETWEEN '2026-04-01' AND '2026-04-30' "
-                "AND lower(name) = lower('доля груз. отправок в груж. вагонах с собл. установл. срока доставки') "
-                "AND road IS NULL ORDER BY report_date"
+                "SELECT r.report_date, trunc(m.day_fact::numeric, 2), "
+                "trunc(m.day_to_plan::numeric * 100, 2) "
+                "FROM metrics m "
+                "JOIN reports r ON m.report_id = r.id "
+                "WHERE r.report_date BETWEEN '2026-04-01' AND '2026-04-30' "
+                "AND lower(m.name) = lower('доля груз. отправок в груж. вагонах с собл. установл. срока доставки') "
+                "AND m.road IS NULL ORDER BY r.report_date"
             )
             data["delivery_daily"] = [[str(r[0]), r[1], r[2]] for r in cur.fetchall()]
 
             # --- Speed trend ---
             cur.execute(
-                "SELECT report_date, trunc(day_fact::numeric, 1) "
-                "FROM metrics "
-                "WHERE report_date BETWEEN '2026-04-01' AND '2026-04-30' "
-                "AND lower(name) = lower('участковая скорость') "
-                "AND road IS NULL ORDER BY report_date"
+                "SELECT r.report_date, trunc(m.day_fact::numeric, 1) "
+                "FROM metrics m "
+                "JOIN reports r ON m.report_id = r.id "
+                "WHERE r.report_date BETWEEN '2026-04-01' AND '2026-04-30' "
+                "AND lower(m.name) = lower('участковая скорость') "
+                "AND m.road IS NULL ORDER BY r.report_date"
             )
             data["speed_daily"] = [[str(r[0]), r[1]] for r in cur.fetchall()]
 
@@ -185,14 +200,14 @@ def _generate_html(data: dict) -> str:
     green = data.get("green_count", 0)
     total = data.get("total_metrics", 0) or (red + yellow + green) or 1
 
-    trends_json = json.dumps(data.get("trends", {}), ensure_ascii=False)
-    dept_zones_json = json.dumps(data.get("dept_zones", []), ensure_ascii=False)
-    red_indicators_json = json.dumps(data.get("red_indicators", []), ensure_ascii=False)
-    personnel_json = json.dumps(data.get("personnel", {}), ensure_ascii=False)
-    delivery_json = json.dumps(data.get("delivery_daily", []), ensure_ascii=False)
-    speed_json = json.dumps(data.get("speed_daily", []), ensure_ascii=False)
-    inv_json = json.dumps(data.get("investment", {}), ensure_ascii=False)
-    delays_json = json.dumps(data.get("delays", {}), ensure_ascii=False)
+    trends_json = json.dumps(data.get("trends", {}), ensure_ascii=False, default=_json_default)
+    dept_zones_json = json.dumps(data.get("dept_zones", []), ensure_ascii=False, default=_json_default)
+    red_indicators_json = json.dumps(data.get("red_indicators", []), ensure_ascii=False, default=_json_default)
+    personnel_json = json.dumps(data.get("personnel", {}), ensure_ascii=False, default=_json_default)
+    delivery_json = json.dumps(data.get("delivery_daily", []), ensure_ascii=False, default=_json_default)
+    speed_json = json.dumps(data.get("speed_daily", []), ensure_ascii=False, default=_json_default)
+    inv_json = json.dumps(data.get("investment", {}), ensure_ascii=False, default=_json_default)
+    delays_json = json.dumps(data.get("delays", {}), ensure_ascii=False, default=_json_default)
 
     return f"""<!DOCTYPE html>
 <html lang="ru">

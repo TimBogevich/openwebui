@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS spravki_delays (
 CREATE INDEX IF NOT EXISTS idx_delays_date      ON spravki_delays (report_date);
 CREATE INDEX IF NOT EXISTS idx_delays_code_date ON spravki_delays (delay_code, report_date);
 COMMENT ON TABLE spravki_delays IS
-  'Задержанные поезда по кодам причин и дорогам. '
+  'Причины задержек/срыва сроков доставки: задержанные (отставленные) поезда по кодам причин и дорогам — для вопросов «почему/из-за чего не выполнен показатель доставки в срок». '
   'Источник справок к ГЦУ. Связывается с metrics по report_date. '
   'Коды: 0=без приказа,1=неприём грузопол,2=погран,4=др.вид тр-та,5=врем.размещение,'
   '6=ожид.накопл.суд.пар,21=отказ техсредств Т,22=нет лок-ва перевозч,'
