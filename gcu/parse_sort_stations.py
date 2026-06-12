@@ -141,6 +141,12 @@ def parse(xlsb_path, report_date_str):
         rec["sent_trains"]    = _num(row.get(17))
         rec["avg_weight"]     = _num(row.get(19))
         rec["avg_length"]     = _num(row.get(21))
+        # Promote the analytically-important fields out of JSONB into typed columns
+        # (header rows r2-r4): 3=рабочий парк НОРМА, 26=норма простоя транзит. с пер.,
+        # 27=ФАКТ простоя транзитного вагона С ПЕРЕРАБОТКОЙ (the headline overload metric).
+        rec["park_norm"]              = _num(row.get(3))
+        rec["idle_transit_pere"]      = _num(row.get(27))
+        rec["idle_transit_pere_norm"] = _num(row.get(26))
 
         # Store everything else as JSONB for forensic recovery
         extra_cols = {3,8,11,12,13,14,16,18,20,22,23,24,25,26,27,28}
@@ -167,14 +173,17 @@ def ingest(xlsb_path, report_date_str, force=False):
                     "INSERT INTO spravki_sort_stations "
                     "(report_date, road, station, period, working_park, rosp_total, "
                     " arrived_trains, refused_trains, rosp_no_pere, formed_trains, "
-                    " sent_trains, avg_weight, avg_length, raw_extra) "
-                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
+                    " sent_trains, avg_weight, avg_length, park_norm, "
+                    " idle_transit_pere, idle_transit_pere_norm, raw_extra) "
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
                     (r["report_date"], r["road"], r["station"], r["period"],
                      r.get("working_park"), r.get("rosp_total"),
                      r.get("arrived_trains"), r.get("refused_trains"),
                      r.get("rosp_no_pere"), r.get("formed_trains"),
                      r.get("sent_trains"), r.get("avg_weight"),
-                     r.get("avg_length"), r.get("raw_extra")))
+                     r.get("avg_length"), r.get("park_norm"),
+                     r.get("idle_transit_pere"), r.get("idle_transit_pere_norm"),
+                     r.get("raw_extra")))
         conn.commit()
         print(f"[OK] loaded {len(recs)} rows for {report_date_str}")
         return len(recs)
