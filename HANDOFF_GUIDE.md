@@ -339,3 +339,39 @@ existing 40Q set, session questions, 10 deliberately hard SQL questions.
 
 ---
 *Extended 2026-06-07. Справки integration, dual benchmark (Gemma + Qwen 102Q), dup-query guard.*
+
+
+---
+
+## Session 2026-06-13 — "gets stuck after test" root-caused & FIXED (two-guard budget)
+
+**Symptom:** model hits the 12-turn cap without answering on ~half of hard questions.
+
+**Root cause (data-proven from test_results_focused_mtp.json):** OVER-EXPLORATION, not
+a repeat-loop. Cap-hits issue 6-8 UNIQUE, non-zero tool calls (avg 6.5 queries vs 1.3 for
+answered). Every query has a different hash and returns rows, so it dodges BOTH the
+identical-query guard AND the zero-result guard. The model already has the answer by
+query 3-4 (proven: Q13 had the correct spravki_delays row at call 8 and 16) but keeps
+re-describing/re-fishing until the cap.
+
+**Fix (gcu/mcp_postgres_server.py, two complementary budget guards):**
+1. `_query_calls` query-volume guard: WARN at 5th query, BLOCK at 7th ("answer now").
+2. `_tool_calls` GLOBAL budget = 9 across describe()+find_indicator()+query() — because
+   round-1 (query-only block) let the model ESCAPE by switching to describe/find (all 21
+   stuck questions hit the query-block but still didn't answer). The global budget closes
+   that escape hatch. Both reset per question.
+
+**Results (85Q combined suite = 57 focused + 8 expert + 20 behavioral):**
+- Baseline (focused only): 30/57 = 53%
+- Round-1 (query-volume): 64/85 = 75%
+- Round-2 (global budget): 20/21 stuck converted -> final 84/85 = 99%
+  (focused 56/57, expert 8/8, behavioral 20/20)
+
+**Test infra (committed):** db/questions_combined.py (85Q grouped), db/run_combined.py
+(runner + HTML report), db/apply_round2_guard.py (idempotent guard patcher). Reports:
+db/combined_report_final.html + Desktop/ЦГЦУ отчеты/. Backup: git tag
+backup-pre-stuck-fix-20260613 + backups/gcu_backup_20260613.sql.
+
+**Tuning note:** _TOOL_BUDGET=9 is the lever. Too low cuts off legit multi-source expert
+questions (need 5-6 queries); too high lets wandering continue. 9 held both. Revisit if
+expert-group pass rate drops.
