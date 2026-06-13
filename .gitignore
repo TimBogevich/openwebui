@@ -31,3 +31,4 @@ gcu/*.bak
 gcu/*.bak.*
 ~$*
 backups/
+scripts/*.log
