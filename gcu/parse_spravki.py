@@ -182,11 +182,27 @@ def parse_failures(path, report_date):
             try: return float(str(v).replace('%','').replace(',','.').strip())
             except: return None
 
+        def gnum(i):
+            """Raw float (hours/poezdo-hours) — NOT scaled like gf()'s percent."""
+            v = row[i] if i < len(row) else None
+            if isinstance(v, (int, float)):
+                return round(float(v), 2)
+            try: return round(float(str(v).replace(',', '.').strip()), 2)
+            except: return None
+
         # The dept name cell is merged across col[0:1], so the numeric block
-        # always starts at index [2]: 2025, 2026, +/-%, resolved, registered, investigated.
+        # always starts at index [2]. Full source layout (cols, 0-based):
+        #   2=отказы 2025, 3=отказы 2026, 4=+/-%, 5=устранено, 6=принято к учёту,
+        #   7=расследовано, 8=на расследовании,
+        #   9=продолж.отказов 2025 (час), 10=продолж.отказов 2026 (час), 11=+/-%,
+        #   16=задержано грузовых поездов (кол-во), 17=продолж.задержки грузовых (поездо-час)
         f25, f26 = gi(2), gi(3)
         pct = gf(4)
         resolved, registered, investigated = gi(5), gi(6), gi(7)
+        dur25, dur26 = gnum(9), gnum(10)
+        dur_pct = gf(11)
+        freight_trains_delayed = gi(16)
+        freight_train_hours = gnum(17)
 
         if f25 is None and f26 is None:
             continue
@@ -195,7 +211,10 @@ def parse_failures(path, report_date):
             report_date=report_date, dept=dept,
             failures_2025=f25, failures_2026=f26,
             change_pct=pct, resolved=resolved,
-            registered=registered, investigated=investigated
+            registered=registered, investigated=investigated,
+            duration_2025=dur25, duration_2026=dur26, duration_change_pct=dur_pct,
+            freight_trains_delayed=freight_trains_delayed,
+            freight_train_hours=freight_train_hours,
         ))
     return records
 
@@ -391,12 +410,15 @@ def write_delays(conn, records):
 
 def write_failures(conn, records):
     sql = """INSERT INTO spravki_failures
-             (report_date,dept,failures_2025,failures_2026,change_pct,resolved,registered,investigated)
-             VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"""
+             (report_date,dept,failures_2025,failures_2026,change_pct,resolved,registered,investigated,
+              duration_2025,duration_2026,duration_change_pct,freight_trains_delayed,freight_train_hours)
+             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     with conn.cursor() as cur:
         for r in records:
             cur.execute(sql, (r['report_date'],r['dept'],r['failures_2025'],r['failures_2026'],
-                              r['change_pct'],r['resolved'],r['registered'],r['investigated']))
+                              r['change_pct'],r['resolved'],r['registered'],r['investigated'],
+                              r.get('duration_2025'),r.get('duration_2026'),r.get('duration_change_pct'),
+                              r.get('freight_trains_delayed'),r.get('freight_train_hours')))
 
 
 def write_locomotives(conn, records):

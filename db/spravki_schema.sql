@@ -47,8 +47,19 @@ CREATE TABLE IF NOT EXISTS spravki_failures (
     change_pct    numeric(8,2),   -- +/-% к 2025
     resolved      int,            -- устранено
     registered    int,            -- принято к учёту
-    investigated  int             -- расследовано
+    investigated  int,            -- расследовано
+    duration_2025 numeric(10,2),  -- общая продолжительность отказов 2025, час
+    duration_2026 numeric(10,2),  -- общая продолжительность отказов 2026, час
+    duration_change_pct numeric(8,2), -- +/-% продолжительности к 2025
+    freight_trains_delayed int,   -- задержано грузовых поездов из-за отказов, ед
+    freight_train_hours numeric(10,2) -- продолжительность задержки грузовых, поездо-час
 );
+-- additive migration for existing DBs
+ALTER TABLE spravki_failures ADD COLUMN IF NOT EXISTS duration_2025 numeric(10,2);
+ALTER TABLE spravki_failures ADD COLUMN IF NOT EXISTS duration_2026 numeric(10,2);
+ALTER TABLE spravki_failures ADD COLUMN IF NOT EXISTS duration_change_pct numeric(8,2);
+ALTER TABLE spravki_failures ADD COLUMN IF NOT EXISTS freight_trains_delayed int;
+ALTER TABLE spravki_failures ADD COLUMN IF NOT EXISTS freight_train_hours numeric(10,2);
 CREATE INDEX IF NOT EXISTS idx_failures_date ON spravki_failures (report_date);
 COMMENT ON TABLE spravki_failures IS
   'Отказы техсредств 1-2 категории по подразделениям (дорогам и комплексам). '
