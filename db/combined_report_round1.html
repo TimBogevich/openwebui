@@ -1,0 +1,1075 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>ЦГЦУ отчёт</title><style>body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#f4f5f7;color:#1a1a1a}header{background:#c8102e;color:#fff;padding:20px 28px}header h1{margin:0;font-size:22px}header .sub{opacity:.85;font-size:13px;margin-top:4px}.summary{display:flex;gap:14px;flex-wrap:wrap;padding:20px 28px}.stat{background:#fff;border-radius:10px;padding:14px 18px;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.08)}.stat .n{font-size:26px;font-weight:700}.stat .l{font-size:12px;color:#666;margin-top:2px}.section-title{padding:8px 28px;font-size:15px;font-weight:700;color:#333}.cards{padding:0 28px 28px;display:grid;gap:12px}.card{background:#fff;border-radius:10px;padding:14px 16px;border-left:5px solid #ccc;box-shadow:0 1px 3px rgba(0,0,0,.06)}.card.good{border-color:#2e7d32}.card.bad{border-color:#ef6c00}.card.err{border-color:#b71c1c}.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;color:#fff}.badge.good{background:#2e7d32}.badge.bad{background:#ef6c00}.badge.err{background:#b71c1c}.grp{font-size:11px;background:#eee;border-radius:4px;padding:2px 7px;color:#555}.meta{font-size:11px;color:#888;margin-left:auto}.q{font-weight:600;margin:8px 0 6px;font-size:14px}.tools{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#0366d6;background:#f6f8fa;padding:5px 8px;border-radius:6px;word-break:break-all}details{margin-top:8px}summary{cursor:pointer;font-size:12px;color:#555}pre{white-space:pre-wrap;font-size:12px;background:#fafafa;padding:10px;border-radius:6px;max-height:340px;overflow:auto;border:1px solid #eee}.note{background:#fff8e1;border-left:5px solid #f9a825;padding:14px 18px;margin:0 28px 18px;border-radius:8px;font-size:13px}</style></head><body><header><h1>ЦГЦУ AI — отчёт по тесту поведения модели</h1><div class="sub">Модель: qwen3.6-35b-a3b-mtp &middot; вопросов: 85 &middot; 2026-06-13</div></header><div class="summary"><div class="stat"><div class="n" style="color:#2e7d32">64</div><div class="l">ответили / 85</div></div><div class="stat"><div class="n" style="color:#ef6c00">21</div><div class="l">застряли (turn-cap)</div></div><div class="stat"><div class="n" style="color:#b71c1c">0</div><div class="l">ошибки</div></div><div class="stat"><div class="n">61</div><div class="l">сработал guard</div></div><div class="stat"><div class="n">3.9 / 6.0</div><div class="l">ср.запросов ответ/застрял</div></div></div><div class="note"><b>Анализ застревания:</b> отвеченные вопросы используют в среднем <b>3.9</b> SQL-запросов, застрявшие <b>6.0</b>. Корень: переисследование (много УНИКАЛЬНЫХ запросов, каждый обходит guard идентичных/нулевых). Добавлен guard по ОБЪЁМУ запросов (WARN на 5-м, BLOCK на 7-м).</div><div class="section-title">По группам: focused 41/57 &middot; expert 5/8 &middot; behavioral 18/20</div><div class="cards"><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=14 &middot; query=7 &middot; guard=3 &middot; 33.3s</span></div><div class="q">Q1. Количество задержанных отправок с нарушенным сроком доставки на 12 марта 2026.</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; query -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; describe -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+**Ответ:**
+
+По запросу о количестве задержанных отправок с нарушенным сроком доставки на 12 марта 2026 г. данные в базе отсутствуют.
+
+В системе учтены следующие показатели, связанные со сроками доставки:
+- Доля груз. отправок в груж. вагонах с соблюдением установленной нормы срока доставки (в процентах)
+- Доля отправок порожних вагонов с соблюдением установленной нормы срока доставки (в процентах)
+
+Отдельного показателя «количество задержанных отправок» в метриках не предусмотрено. В справочных таблицах (`spravki_delays`) отражены данные о задержанных поездах и вагонах по кодам причин, но не об отправлениях.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=14 &middot; query=7 &middot; guard=3 &middot; 40.3s</span></div><div class="q">Q2. Филиалы ОАО «РЖД», допустившие максимальное количество задержек в апреле 2026 г.</div><div class="tools">datetime -&gt; describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Ответ
+
+На основе проведённого анализа базы данных ежедневных докладов ЦГЦУ за апрель 2026 г.:
+
+**Найденный показатель:** «Количество фактов опоздания грузовых поездов по прибытию на конечную станцию»
+
+- **Месячный факт (month_fact) за апрель 2026 г.:** 37 520 ед.
+- **Дорога:** «–» (общий показатель по сети ОАО «РЖД»)
+
+**Ограничение данных:** В таблице `metrics` данный показатель представлен для дороги «–», что означает сводный показатель по всей сети. Детализации по отдельным филиалам (дорогам) в рамках данного показателя в доступных данных не обнаружено.
+
+Для получения разбивки по филиалам требуется дополнительный анализ структуры данных или обращение к другим таблицам/показателям, которые не были идентифицированы в ходе текущего запроса.</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=7 &middot; guard=2 &middot; 29.6s</span></div><div class="q">Q3. Назови три основные причины задержки и их количество в апреле 2026 г. по ответственности (ЦД, ЦТ, ЦДИ, ЦФТО, ЦДРП).</div><div class="tools">describe -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; indicator -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=14 &middot; query=7 &middot; guard=3 &middot; 41.4s</span></div><div class="q">Q4. Сумма задержек (риск предъявления за просрочку доставки) по всем филиалам ОАО «РЖД» на 12.03.2026.</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; indicator[stop] -&gt; indicator -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Справка по риску предъявления за просрочку доставки на 12.03.2026
+
+**Показатель:** «иски к ОАО &quot;РЖД&quot; о взыскании пени за просрочку доставки грузов»
+
+| Параметр | Значение |
+|----------|----------|
+| Статус показателя | Сетевой (не разбивается по филиалам/дорогам) |
+| day_fact (за сутки 12.03.2026) | Данные отсутствуют |
+| month_fact (нарастающий итог) | 2127,913 тыс. руб. |
+
+**Вывод:** 
+- Показатель «иски к ОАО &quot;РЖД&quot; о взыскании пени за просрочку доставки грузов» является сетевым и не имеет разбивки по филиалам (дородам).
+- Суточные данные (day_fact) на 12.03.2026 отсутствуют.
+- Доступен только нарастающий итог месяца: **2127,913 тыс. руб.**
+
+Для получения детализации по филиалам требуется иной показатель или источник данных.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=14 &middot; query=7 &middot; guard=3 &middot; 40.1s</span></div><div class="q">Q5. Сумма задержек (риск предъявления за просрочку доставки) по ЦТ, ЦД, ЦДИ, ЦДРП, ЦФТО на 12.03.2026.</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; query -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; describe -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+**Ответ:**
+
+По запросу суммы задержек (риска предъявления) за просрочку доставки по ЦТ, ЦД, ЦДИ, ЦДРП, ЦФТО на 12.03.2026:
+
+В базе данных идентифицирован показатель **«Иски к ОАО «РЖД» о взыскании пени за просрочку доставки грузов»** (индикатор 24.3.1), измеряемый в млн руб.
+
+Однако **детализированные данные по указанным центрам на 12.03.2026 отсутствуют**. Показатель 24.3.1 для отчета за эту дату не содержит разбивки по дорогам/центрам (поле road пустое или запись отсутствует).
+
+**Вывод:** Данные по рискам предъявления с детализацией по ЦТ, ЦД, ЦДИ, ЦДРП, ЦФТО на 12.03.2026 в системе не представлены. Рекомендуется проверить наличие данных за смежные даты или уточнить структуру показателя у ответственных подразделений.</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=6 &middot; guard=2 &middot; 30.0s</span></div><div class="q">Q6. Наличие задержанных груженых поездов на 12 марта 2026 — итого по сети и в разрезе дорог.</div><div class="tools">indicator -&gt; indicator -&gt; describe -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=2 &middot; guard=3 &middot; 36.7s</span></div><div class="q">Q7. Наличие задержанных вагонов груженых поездов на 12 марта 2026 — по сети и разбивка по кодам причин.</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; query -&gt; describe[stop] -&gt; describe -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; describe -&gt; query</div><details><summary>ответ</summary><pre>
+
+## Задержанные вагоны гружёных поездов по сети ОАО «РЖД» за сутки 12.03.2026
+
+**Итого по сети:** 475 поездов, **27 688 вагонов**.
+
+### Разбивка по кодам причин:
+
+| Код | Причина | Вагоны | Поезда |
+|-----|---------|--------|--------|
+| 1 | Неприём грузополучателями | 9 002 | 152 |
+| 5 | Временное размещение на путях необщего пользования | 5 635 | 97 |
+| 43 | Отказ технических средств ДИ (диспетчерской информации) | 3 875 | 59 |
+| 2 | Неприём пограничными станциями | 3 849 | 76 |
+| 22 | Нет локомотива перевозчика | 1 620 | 27 |
+| 21 | Отказ технических средств Т (тяги) | 1 405 | 22 |
+| 4 | Другой вид транспорта | 865 | 16 |
+| 44 | Несвоевременная очистка | 510 | 9 |
+| 0 | Без диспетчерского приказа | 303 | 5 |
+| 92 | Угроза теракта | 452 | 9 |
+| 6 | Ожидание накопления судового парка | 109 | 2 |
+| 24 | Нет локомотива | 63 | 1 |
+
+**Ключевые факторы:** основные причины задержек — неприём со стороны грузополучателей (32,5% вагонов) и временное размещение на путях необщего пользования (20,3%). Отказ технических средств ДИ составляет 14,0%, неприём пограничными станциями — 13,9%.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=11 &middot; query=5 &middot; guard=3 &middot; 31.1s</span></div><div class="q">Q8. Количество задержанных поездов по причине нет локомотива перевозчика (код 22) на 12.03.2026 по дорогам.</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+**Искомый показатель не найден.**
+
+В базе данных отсутствуют показатели, связанные с количеством задержанных поездов по причине «нет локомотива перевозчика» (код 22). 
+
+Из доступных показателей в разделе I («Обеспеченность запасами для производственного процесса») присутствуют только:
+- Обеспечение питанием пассажиров при задержке поездов более 4 часов (14.1.2)
+- Показатели по обеспечению локомотивной тяги и поставкам новых локомотивов
+
+Показатели, классифицирующие задержки поездов по причинам (включая код 22), в текущей структуре базы данных не представлены.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=8 &middot; query=3 &middot; guard=1 &middot; 22.2s</span></div><div class="q">Q9. Количество задержанных поездов по ЮУР на 12.03.2026 с разбивкой по кодам.</div><div class="tools">indicator -&gt; describe -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; query -&gt; query -&gt; query</div><details><summary>ответ</summary><pre>
+
+## Количество задержанных поездов по ЮУР на 12.03.2026
+
+**Итого за сутки:** 18 поездов
+
+| Код причины | Наименование | Кол-во поездов |
+|-------------|--------------|----------------|
+| ВСЕГО | Итого все коды | 18 |
+| 2 | Неприем погран | 12 |
+| 1 | Неприем грузопол | 4 |
+| 5 | Вр. размещ. п.сост. | 1 |
+| 21 | Отказ техсредств Т | 1 |
+
+**Основная причина задержек:** код 2 «Неприем погран» — 12 поездов (66,7% от общего числа).</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=7 &middot; guard=2 &middot; 60.0s</span></div><div class="q">Q10. Какова тенденция за последний месяц показателя доля грузовых отправок в груженых вагонах с соблюдением срока доставки? Выполняется ли план за месяц и когда возможно будет нарушен при текущей тенденции?</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; query -&gt; query -&gt; describe -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; describe[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=5 &middot; guard=2 &middot; 26.0s</span></div><div class="q">Q11. Сколько груженых поездов было отставлено на сети 9 апреля 2026 г. по коду 21 «Отказ техсредств Т»?</div><div class="tools">describe -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; indicator -&gt; indicator[stop] -&gt; indicator -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=7 &middot; guard=2 &middot; 27.0s</span></div><div class="q">Q12. Процент выполнения расписания движения грузовых поездов прибывших на конечную станцию на 15 апреля 2026.</div><div class="tools">indicator -&gt; indicator -&gt; describe -&gt; describe -&gt; query -&gt; query -&gt; describe[stop] -&gt; query -&gt; query[stop] -&gt; query -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=13 &middot; query=7 &middot; guard=3 &middot; 44.2s</span></div><div class="q">Q13. Сколько груженых поездов было задержано (отставленные) на сети 12 марта 2026 по ответственности подразделений ОАО «РЖД»?</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Ответ по запросу
+
+**По данным за 12 марта 2026 года:**
+
+В базе данных ОАО «РЖД» (ежедневные доклады ЦГЦУ) отсутствует разделение отставленных поездов на груженые и порожние в показателях, связанных с ответственностью подразделений.
+
+**Доступные данные по задержанным (отставленным) поездам:**
+
+1. **Общее количество задержанных поездов по сети ОАО «РЖД»:** 475 поездов (27 688 вагонов) — согласно таблице `spravki_delays` (причины задержек/срыва сроков доставки).
+
+2. **Показатель «отставленные от движения поезда»** (таблица `metrics`) за сутки:
+   - Индикатор 7.7.1.3: 3 поездов
+   - Индикатор 7.7.2.3: 4 поездов  
+   - Индикатор 7.7.3.5: 33 поездов
+
+**Вывод:** Данные о количестве именно **груженых** отставленных поездов по ответственности подразделений ОАО «РЖД» за указанную дату в доступных таблицах отсутствуют. В таблице `spravki_delays` учтены все типы поездов без разделения на гружёные/порожние, а в метриках показатель «отставленные от движения поезда» также не дифференцирован по типу загрузки.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=13 &middot; query=7 &middot; guard=3 &middot; 42.2s</span></div><div class="q">Q14. Сколько груженых поездов среднесуточно задержано без диспетчерского приказа (код 0) на сети на 12.03.2026?</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; query -&gt; describe -&gt; query -&gt; query -&gt; query[stop] -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+На основании проведённого анализа структуры базы данных:
+
+**Таблица `spravki_delays`** содержит детализацию задержек поездов по кодам причин и дорогам на 12.03.2026. Структура таблицы включает колонки:
+- `delay_code` — код причины задержки (код «0» соответствует задержкам без диспетчерского приказа)
+- `trains` — количество задержанных поездов
+- `road_code` — код дороги
+
+**Ограничение:** В ходе работы исчерпан лимит запросов к базе данных. Точное среднесуточное значение по гружёным поездам с кодом причины «0» на 12.03.2026 не может быть рассчитано без выполнения финального агрегирующего запроса:
+
+```sql
+SELECT SUM(trains) FROM spravki_delays 
+WHERE report_date = &#x27;2026-03-12&#x27; AND delay_code = &#x27;0&#x27;
+```
+
+**Рекомендация:** Для получения точного значения необходимо выполнить указанный SQL-запрос к таблице `spravki_delays` с фильтром по дате 2026-03-12 и коду причины «0».</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=7 &middot; query=2 &middot; guard=1 &middot; 16.7s</span></div><div class="q">Q15. На какой дороге 12.03.2026 было больше всего задержанных поездов по коду 5 (временное размещение)?</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; query -&gt; query</div><details><summary>ответ</summary><pre>
+
+По состоянию на 12.03.2026 наибольшее количество задержанных поездов по коду 5 (временное размещение) было зафиксировано на **Октябрьской дороге (ОКТ)** — **28 поездов**.
+
+Сводка по дорогам:
+- ОКТ — 28
+- ПРВ — 20
+- ДВС — 10
+- ЮВС — 9
+- КБШ — 8
+- ВСБ — 6
+- СКВ — 4
+- ЗАБ — 3
+- СВР, СЕВ, МСК — по 2
+- ЗСБ, ЮУР, ГОР — по 1
+
+Итого по сети: 97 задержанных поездов.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=11 &middot; query=5 &middot; guard=2 &middot; 102.0s</span></div><div class="q">Q16. Какие 3 дороги имели больше всего задержанных поездов по коду 46 «Ограничения по окнам» на 12.03.2026?</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query -&gt; describe[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+**Ответ:** Данные по коду 46 «Ограничения по окнам» за 12.03.2026 в базе отсутствуют.
+
+В таблице `spravki_delays` (причины задержек поездов) за указанную дату представлены следующие коды причин:
+- 0 — Без диспетчерского приказа
+- 1 — Неприём грузопол
+- 2 — Неприём погран
+- 4 — Другой вид транзита
+- 5 — Временное размещение подвижного состава
+- 6 — Ожидание накопления судовых партий
+- 21 — Отказ техсредств Т
+- 22 — Нет локомотива перевозчика
+- 24 — Нет локомотива
+- 43 — Отказ техсредств ДИ
+- 44 — Несвоевременная очистка
+- 92 — Угроза теракта
+
+Код 46 «Ограничения по окнам» в справочнике причин задержек на указанную дату не включён.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=4 &middot; query=1 &middot; guard=0 &middot; 17.5s</span></div><div class="q">Q17. Назови три дороги у которых 12 марта 2026 было больше всего задержанных поездов по коду 1 (неприём грузополучателем). Приведи значения для каждой.</div><div class="tools">indicator -&gt; describe -&gt; describe -&gt; query</div><details><summary>ответ</summary><pre>
+
+**Три дороги с наибольшим количеством задержанных поездов по коду 1 («Неприём грузополучателем») за сутки 12.03.2026:**
+
+| Дорога | Поезда | Вагоны |
+|--------|--------|--------|
+| СКВ    | 63     | 3824   |
+| ДВС    | 17     | 1009   |
+| ПРВ    | 16     | 786    |
+
+**Итого по трём дорогам:** 96 поездов, 5619 вагонов.
+
+Лидер — Свердловская железная дорога (СКВ) с показателем в 3,7 раза превышающим второй результат.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=7 &middot; guard=2 &middot; 41.0s</span></div><div class="q">Q18. Какова тенденция показателя «доля грузовых отправок в срок» за апрель 2026? Покажи нарастающим итогом по датам — выполняется ли план 98%?</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; describe -&gt; query -&gt; query -&gt; describe[stop] -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Ответ по показателю «доля грузовых отправок в срок» за апрель 2026 г.
+
+**Идентифицированный показатель:**  
+`Доля груз. отправок в груж. вагонах с собл. установл. срока доставки`
+
+**Статус данных:**  
+Данные за апрель 2026 года не получены в рамках текущего запроса из-за ограничения на количество обращений к базе данных. 
+
+**Методология расчёта нарастающего итога:**  
+Для получения тренда по дням апреля 2026 г. с накоплением используется функция `SUM(day_fact) OVER (ORDER BY report_date)` для указанного показателя, где:
+- `day_fact` — суточное значение доли отправок в срок
+- Плановое значение: **98%**
+
+**Рекомендация:**  
+Для получения детализированных данных по дням апреля 2026 г. с расчётом нарастающего итога и сравнением с планом 98% требуется отдельный запрос к базе данных с использованием SQL-оконных функций.
+
+Готов выполнить дополнительный запрос при необходимости получения конкретных числовых значений.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=13 &middot; query=7 &middot; guard=3 &middot; 38.5s</span></div><div class="q">Q19. Назови топ-3 подразделения ОАО РЖД по числу фактов опоздания грузовых поездов за апрель 2026. Приведи числа нарастающим итогом на 30 апреля.</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+По запросу **топ-3 подразделений ОАО РЖД по числу фактов опоздания грузовых поездов за апрель 2026 года** данные отсутствуют в разрезе подразделений.
+
+В базе данных присутствует показатель **«Количество фактов опоздания грузовых поездов по прибытию на конечную станцию»**, однако в отчёте ЦГУ за 30 апреля 2026 г. он не имеет разбивки по железнодорожным дорогам (поле `road` заполнено значением «-»). Общий нарастающий итог по сети составляет **37 520 фактов опоздания**.
+
+Для получения данных в разрезе подразделений требуется уточнение:
+1. Используется ли иной показатель с разбивкой по дорогам?
+2. Или данные агрегируются на уровне других структурных единиц (регионов, зон)?</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=14 &middot; query=7 &middot; guard=3 &middot; 34.9s</span></div><div class="q">Q20. Сколько груженых поездов отставлено от движения на сети 12 марта 2026 по вине ОАО РЖД? Разбей по ЦД, ЦДИ, ЦТ.</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; indicator -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=8 &middot; query=4 &middot; guard=0 &middot; 23.9s</span></div><div class="q">Q21. Какова сумма исков к ОАО РЖД о взыскании пени за просрочку доставки грузов по состоянию на 12 марта 2026 — за месяц и нарастающим?</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; query -&gt; describe -&gt; query -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+**Показатель:** Иски к ОАО «РЖД» о взыскании пени за просрочку доставки грузов (код 24.3.1)  
+**Дата отчета:** 12 марта 2026 г.  
+**Единица измерения:** млн руб.
+
+| Период | Сумма исков |
+|--------|-------------|
+| За сутки (day_fact) | — |
+| За месяц нарастающим итогом (month_fact) | 2127,913 |
+| Годовая накопленная сумма (year_fact) | 4158,237 |
+
+**Вывод:** По состоянию на 12 марта 2026 г. общая сумма предъявленных исков о взыскании пени за просрочку доставки грузов составляет **4158,2 млн руб.** нарастающим итогом с начала года, из них за текущий месяц — **2127,9 млн руб.**</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=11 &middot; query=7 &middot; guard=1 &middot; 34.8s</span></div><div class="q">Q22. Сколько фактов опоздания грузовых поездов по прибытию на конечную станцию накопилось с начала апреля 2026 на 30 апреля?</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; query -&gt; describe -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+По состоянию на 30 апреля 2026 года накопленное количество фактов опоздания грузовых поездов по прибытию на конечную станцию с начала апреля составило **37 520**.
+
+Данные представлены в виде нарастающего итога за месяц (month_fact). Суточные значения (day_fact) в отчётности не заполнены.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=7 &middot; guard=2 &middot; 62.4s</span></div><div class="q">Q23. Рассчитай тренд нарастающего показателя доли отправок в срок за апрель 2026. При текущем темпе снижения — когда нарушится план 98%?</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; describe -&gt; query -&gt; query -&gt; describe[stop] -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Анализ тренда доли отправок в срок за апрель 2026
+
+**Показатель:** Доля груз. отправок в груж. вагонах с собл. установл. срока доставки (нарастающий итог, month_fact)
+
+### Динамика за период 01.04–18.04.2026:
+
+| Дата | Значение | Изменение к пред. дню |
+|------|----------|-----------------------|
+| 01.04 | 98,534% | — |
+| 02.04 | 98,400% | −0,134 |
+| 03.04 | 98,504% | +0,104 |
+| 04.04 | 98,591% | +0,087 |
+| 05.04 | 98,555% | −0,036 |
+| 06.04 | 98,494% | −0,061 |
+| 07.04 | 98,516% | +0,022 |
+| 08.04 | 98,450% | −0,066 |
+| 09.04 | 98,418% | −0,032 |
+| 10.04 | 98,407% | −0,011 |
+| 11.04 | 98,349% | −0,058 |
+| 12.04 | 98,381% | +0,032 |
+| 13.04 | 98,344% | −0,037 |
+| 14.04 | 98,358% | +0,014 |
+| 15.04 | 98,365% | +0,007 |
+| 16.04 | 98,372% | +0,007 |
+| 17.04 | 98,357% | −0,015 |
+| 18.04 | 98,359% | +0,002 |
+
+### Расчёт линейного тренда:
+
+- **Начальное значение (01.04):** 98,534%
+- **Текущее значение (18.04):** 98,359%
+- **Снижение за период:** −0,175 п.п. за 17 дней
+- **Среднесуточный темп снижения:** ≈ −0,0103 п.п./день
+
+### Прогноз нарушения плана 98%:
+
+До планового уровня осталось: 98,359 − 98,0 = **0,359 п.п.**
+
+При сохранении текущего среднесуточного темпа снижения (−0,0103 п.п./день):
+- **Срок до нарушения:** 0,359 / 0,0103 ≈ **35 суток** с 18 апреля
+- **Ожидаемая дата нарушения плана:** около **22 мая 2026 г.**
+
+### Вывод:
+
+При текущем темпе снижения доли отправок в срок плановый показатель 98% будет нарушен ориентировочно **в конце мая 2026 года** (конец первой декад</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=4 &middot; guard=2 &middot; 27.1s</span></div><div class="q">Q24. Сколько поездов отставлено от движения на Забайкальском погранпереходе (7.7.3.5) на 12 марта 2026 — за сутки и нарастающим?</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; describe -&gt; describe -&gt; query -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=13 &middot; query=7 &middot; guard=3 &middot; 44.5s</span></div><div class="q">Q25. Сравни количество фактов опоздания грузовых поездов за март 2022 и апрель 2026. У какого месяца хуже показатель?</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Анализ данных по опозданиям грузовых поездов
+
+**Искомый показатель:** «Количество фактов опоздания грузовых поездов по прибытию на конечную станцию» (индикатор 6.1)
+
+### Результаты проверки:
+
+| Период | Данные доступны |
+|--------|-----------------|
+| Март 2022 | **Отсутствуют** в базе данных |
+| Апрель 2026 | Присутствуют (частично, с 01.04 по 12.04) |
+
+### Вывод:
+
+Сравнение за март 2022 и апрель 2026 **невозможно** — данные за март 2022 для данного показателя в базе отсутствуют. 
+
+База содержит записи от 2022-03-01 до 2026-04-30, однако показатель «Количество фактов опоздания грузовых поездов по прибытию на конечную станцию» за март 2022 не зафиксирован.
+
+**Рекомендация:** Для проведения сравнения необходимо уточнить:
+1. За какой период требуются данные (возможно, имеется в виду другой месяц/год)?
+2. Или требуется использовать альтернативный показатель?</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=9 &middot; query=2 &middot; guard=1 &middot; 22.7s</span></div><div class="q">Q26. Покажи полную таблицу задержанных груженых поездов по всем кодам причин на сети 12.03.2026 — количество поездов и вагонов по каждому коду.</div><div class="tools">describe -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; indicator -&gt; query -&gt; describe -&gt; describe -&gt; query</div><details><summary>ответ</summary><pre>
+
+## Задержанные груженые поезда на сети ОАО «РЖД» за 12.03.2026
+
+| Код причины | Наименование причины | Поездов | Вагонов |
+|-------------|---------------------|---------|---------|
+| 0 | Без диспетчерского приказа | 5 | 303 |
+| 1 | Неприём грузополучателей | 152 | 9 002 |
+| 2 | Неприём на границе | 76 | 3 849 |
+| 4 | Другой вид транзита | 16 | 865 |
+| 5 | Временное размещение подвижного состава | 97 | 5 635 |
+| 6 | Ожидание накопления судовых партий | 2 | 109 |
+| 21 | Отказ технических средств ТЦО | 22 | 1 405 |
+| 22 | Нет локомотива перевозчика | 27 | 1 620 |
+| 24 | Нет локомотива | 1 | 63 |
+| 43 | Отказ технических средств ДИСПК | 59 | 3 875 |
+| 44 | Несвоевременная очистка | 9 | 510 |
+| 92 | Угроза теракта | 9 | 452 |
+
+**Итого по сети:** 475 поездов, 27 688 вагонов.
+
+Наибольший вклад в отставание оказывают:
+- Неприём грузополучателями — 152 поезда (33,9% от общего числа)
+- Временное размещение подвижного состава — 97 поездов (20,4%)
+- Неприём на границе — 76 поездов (16,0%)</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=9 &middot; query=1 &middot; guard=2 &middot; 32.1s</span></div><div class="q">Q27. Какую долю (%) от всех задержанных поездов на 12.03.2026 составляют поезда по вине ОАО РЖД (коды 0,5,21,22,24,43,44)?</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; describe -&gt; indicator[stop] -&gt; describe[stop] -&gt; describe -&gt; describe -&gt; query</div><details><summary>ответ</summary><pre>
+
+**Доля задержанных поездов по вине ОАО РЖД на 12.03.2026**
+
+| Показатель | Значение |
+|------------|----------|
+| Всего задержанных поездов (сеть) | 475 |
+| Из них по вине ОАО РЖД (коды 0, 5, 21, 22, 24, 43, 44) | 220 |
+| **Доля** | **46,3%** |
+
+Поезда, задержанные по причинам, относящимся к вине ОАО РЖД (отказ техсредств тяги и дистанции пути, отсутствие локомотива перевозчика/РЖД, временное размещение подвижного состава, несвоевременная очистка, работа без диспетчерского приказа), составили 220 из 475 задержанных поездов.</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=17 &middot; query=3 &middot; guard=4 &middot; 32.4s</span></div><div class="q">Q28. Проанализируй выполнение погрузки по классам груза (1, 2, 3) за период 1–5 апреля 2026. Покажи суточные факты и отклонения от плана.</div><div class="tools">indicator -&gt; describe -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; indicator[stop] -&gt; describe -&gt; describe -&gt; describe[stop] -&gt; describe -&gt; describe -&gt; query -&gt; describe[stop] -&gt; describe -&gt; describe -&gt; query -&gt; query</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=10 &middot; query=5 &middot; guard=1 &middot; 33.7s</span></div><div class="q">Q29. Какова средняя участковая скорость движения грузовых поездов за апрель 2026? Покажи суточную динамику за первую неделю.</div><div class="tools">indicator -&gt; describe -&gt; describe -&gt; indicator -&gt; query -&gt; query -&gt; describe[stop] -&gt; query -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Средняя участковая скорость движения грузовых поездов за апрель 2026 г.
+
+**Средняя участковая скорость за месяц: 38,1 км/ч**  
+(значение month_fact по состоянию на 30.04.2026)
+
+### Суточная динамика за первую неделю апреля 2026 г.
+
+| Дата | Участковая скорость, км/ч |
+|------|---------------------------|
+| 01.04.2026 | 38,3 |
+| 02.04.2026 | 38,5 |
+| 03.04.2026 | 37,6 |
+| 04.04.2026 | 38,7 |
+| 05.04.2026 | 38,4 |
+| 06.04.2026 | 38,1 |
+| 07.04.2026 | 37,7 |
+
+**Среднее значение за первую неделю: 38,2 км/ч**  
+Минимум: 37,6 км/ч (03.04)  
+Максимум: 38,7 км/ч (04.04)</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=5 &middot; guard=2 &middot; 25.6s</span></div><div class="q">Q30. Какая дорога показала наибольшую скорость доставки грузовых отправок в груженых вагонах на 1 марта 2022? Покажи топ-3.</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; query -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; describe -&gt; query[stop] -&gt; query</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=7 &middot; guard=2 &middot; 53.7s</span></div><div class="q">Q31. Какой средний вес грузового поезда за апрель 2026? Покажи значение на 1 апреля и 30 апреля.</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; describe -&gt; query -&gt; query -&gt; describe[stop] -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Средний вес грузового поезда — апрель 2026
+
+| Показатель | Значение, т |
+|------------|-------------|
+| **Среднее за месяц** | **4137,7** |
+| На 1 апреля | 4121,6 |
+| На 30 апреля | 4129,0 |
+
+**Динамика:** значение на конец месяца превысило показатель начала апреля на 7,4 т (+0,2%). Разброс суточных значений за месяц составил от 4093,5 т (5 апреля) до 4175,0 т (8 апреля).</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=10 &middot; query=6 &middot; guard=0 &middot; 49.8s</span></div><div class="q">Q32. Оцени динамику грузооборота в апреле 2026: как менялся показатель к плану от начала к концу месяца?</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; query -&gt; query -&gt; describe -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Динамика грузооборота за апрель 2026 года
+
+**Показатель:** Грузооборот, всего, в т.ч. (млн. ткм)
+
+### Итоговые показатели месяца:
+- **Нарастающий итог факт:** 8727,3 млн. ткм
+- **Выполнение плана к концу месяца:** **-1,15%** (недовыполнение)
+
+### Динамика выполнения плана нарастающим итогом (month_to_plan):
+
+| Период | Выполнение плана | Характеристика |
+|--------|------------------|----------------|
+| 01.04 | -5,0% | Начало месяца с отставанием |
+| 02–03.04 | -1,0…-2,0% | Быстрое улучшение |
+| 06–08.04 | -2,8…-3,4% | Провал (минимум -3,4% к 08.04) |
+| 09–15.04 | -2,2…-1,9% | Постепенное восстановление |
+| 16–23.04 | -1,8…-1,3% | Стабильное улучшение |
+| 24–26.04 | -1,5…-1,3% | Небольшие колебания |
+| 27–30.04 | -1,2…-1,2% | Финализация на уровне -1,2% |
+
+### Ключевые выводы:
+
+1. **Тренд:** От начального отставания в -5,0% к концу месяца показатель сократился до -1,15%. Динамика положительная — план выполнялся всё ближе.
+
+2. **Минимум выполнения:** 8 апреля (-3,4%) — после серии дней с суточным грузооборотом ниже плана (6–7 апреля: 8117 и 8307 млн. ткм).
+
+3. **Максимальный суточный грузооборот:** 9281,8 млн. ткм (9 апреля) — лучший день месяца, что способствовало началу восстановления выполнения плана.
+
+4. **Разброс суточных значений:** от 8117,8 до 9281,8 млн. ткм (разница ~14%).
+
+5. **Заключение:** Апрель 2026 завершён с недовыполнением грузооборота на 1,15%, однако тенденция к концу месяца была восходящей — отставание сокращалось.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=11 &middot; query=5 &middot; guard=2 &middot; 41.1s</span></div><div class="q">Q33. Оцени динамику грузооборота в течение марта 2022: как менялся показатель к плану и к прошлому году?</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Динамика грузооборота за март 2022 г.
+
+**Показатель:** «Грузооборот, всего, в т.ч.» (млн т·км)
+
+### Ключевые показатели за сутки:
+| Параметр | Значение |
+|----------|----------|
+| Среднесуточный грузооборот | 9 460 млн т·км |
+| Минимум | 8 802 млн т·км (11.03) |
+| Максимум | 10 006 млн т·км (10.03) |
+
+### Выполнение к плану:
+- **Среднее отклонение:** +5,4% к плановым значениям
+- **План выполнен:** в 30 из 31 суток (96,8%)
+- **Единственный день невыполнения:** 11.03 (–1,9%)
+
+### Отклонение от марта 2021 г.:
+- **Среднее отклонение:** +2,2% к уровню прошлого года
+- **Выше уровня прошлого года:** в 22 из 31 суток (71%)
+- **Ниже уровня прошлого года:** в 9 суток
+
+### Вывод:
+В марте 2022 г. грузооборот демонстрировал устойчивое превышение плановых заданий (+5,4% в среднем) и умеренный рост к уровню марта 2021 г. (+2,2%). Отклонения от плана носили эпизодический характер — один день невыполнения на фоне стабильного выполнения в остальные сутки месяца.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=9 &middot; query=7 &middot; guard=1 &middot; 33.6s</span></div><div class="q">Q34. Назови топ-3 и антитоп-3 дороги по скорости доставки грузовых отправок на 1 марта 2022.</div><div class="tools">describe -&gt; indicator -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Ответ по скорости доставки грузовых отправок за 1 марта 2022 года
+
+**Данные отсутствуют.**
+
+По показателю «Средняя скорость доставки груз. отправок в груж. вагонах, в т.ч. по ж.д.» за 1 марта 2022 года значение составляет **0,0 км/сут**. 
+
+Данный показатель был доступен для расчёта с 1 марта 2022 года (согласно примечанию «Доработка системы-источника до 01.03.2022 г.»), однако фактические значения по дорогам начали формироваться в последующие дни отчётного периода (до 29 марта 2022 года).
+
+**Примечание:** Альтернативный показатель «Скорость доставки груженых отправок» доступен только за период с 12 марта 2026 года и не применим к запрашиваемой дате.
+
+Для формирования рейтинга дорог по скорости доставки грузовых отправок необходимы данные за более поздние даты марта-апреля 2022 года, когда показатель начал отражать фактические значения.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=11 &middot; query=4 &middot; guard=1 &middot; 54.4s</span></div><div class="q">Q35. Сравни участковую и техническую скорость по данным справок за 12.03.2026. На каких дорогах наибольшее отставание от нормы?</div><div class="tools">indicator -&gt; describe -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; describe -&gt; describe -&gt; query -&gt; query -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Справка по скоростным показателям за сутки 12.03.2026
+
+### Сравнение участковой и технической скорости (сеть ОАО «РЖД»)
+
+| Показатель | Участковая скорость | Техническая скорость |
+|------------|---------------------|----------------------|
+| Кол-во дорог | 17 | 17 |
+| Норма, км/ч | 39.8 | 44.1 |
+| Факт за сутки, км/ч | 39.8 | 44.9 |
+| Отклонение от нормы, км/ч | -0.01 (в норме) | +0.82 (превышение) |
+
+**Вывод:** По сети в целом участковая скорость выполнена точно по нормативу, техническая скорость превышает норму на 0.8 км/ч.
+
+---
+
+### Дороги с наибольшим отставанием фактической скорости от нормы за сутки
+
+| № | Дорога | Тип скорости | Норма, км/ч | Факт, км/ч | Отставание, км/ч |
+|---|--------|--------------|-------------|------------|------------------|
+| 1 | **Свердловская** | участковая | 35.9 | 31.1 | **-4.8** |
+| 2 | **СВР** (Северо-Восточная) | техническая | 41.1 | 38.0 | **-3.1** |
+| 3 | **Западно-Сибирская** | участковая | 46.9 | 44.8 | **-2.1** |
+| 4 | **ЗСБ** (Западная Сибирь) | техническая | 51.5 | 49.8 | **-1.7** |
+| 5 | **Красноярская** | участковая | 36.1 | 35.0 | **-1.1** |
+
+---
+
+### Итог
+
+Наибольшее отставание от нормативных показателей за сутки 12.03.2026 наблюдается на **Свердловской дороге** по участковой скорости (отставание 4.8 км/ч) и на **Северо-Восточной дороге** по технической скорости (отставание 3.1 км/ч).
+
+Рекомендую обратить внимание на причины снижения скоростей на указанных направлениях для принятия оперативных мер.</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=7 &middot; guard=2 &middot; 27.0s</span></div><div class="q">Q36. Какова погрузка в адрес портов Дальнего Востока в апреле 2026 — суточный факт и нарастающим?</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; query -&gt; describe[stop] -&gt; indicator -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=4 &middot; query=1 &middot; guard=1 &middot; 17.5s</span></div><div class="q">Q37. По данным справки за 12.03.2026: на каких дорогах участковая скорость ниже нормы? Покажи отклонение.</div><div class="tools">describe -&gt; describe -&gt; describe[stop] -&gt; query</div><details><summary>ответ</summary><pre>
+
+## Справка: участковая скорость ниже нормы за 12.03.2026
+
+По данным на 12 марта 2026 года участковая скорость ниже нормативной зафиксирована на **7 магистральных дорогах** и по сети в целом.
+
+| Дорога | Норма, км/ч | Факт, км/ч | Отклонение, км/ч |
+|--------|-------------|------------|------------------|
+| Свердловская | 35,9 | 31,1 | **-4,8** |
+| Западно-Сибирская | 46,9 | 44,8 | -2,1 |
+| Красноярская | 36,1 | 35,0 | -1,1 |
+| Горьковская | 37,2 | 36,4 | -0,8 |
+| Северо-Кавказская | 35,0 | 34,3 | -0,7 |
+| Куйбышевская | 41,0 | 40,3 | -0,7 |
+| Калининградская | 54,3 | 54,0 | -0,3 |
+| **СЕТЬ** (среднее) | 38,2 | 38,0 | **-0,2** |
+
+### Ключевые выводы:
+1. **Свердловская дорога** — критическое отклонение **-4,8 км/ч** (факт 31,1 против нормы 35,9). Требует оперативного анализа причин снижения.
+2. **Западно-Сибирская дорога** — второе место по отклонению (-2,1 км/ч), но абсолютное значение факта (44,8 км/ч) остаётся выше сетевого среднего.
+3. По сети в целом участковая скорость ниже нормы на 0,2 км/ч — незначительное отклонение.
+
+Рекомендую запросить у дорог-лидеров по отклонению (Свердловская, Западно-Сибирская) пояснительные записки о причинах снижения участковой скорости.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=4 &middot; guard=2 &middot; 41.9s</span></div><div class="q">Q38. Сколько отказов техсредств 1-2 категории зафиксировано на Октябрьской и Свердловской дорогах по суточной справке за 12.03.2026? Сравни с 2025 годом.</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; describe -&gt; describe -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Отказы техсредств 1-2 категории за 12.03.2026
+
+**Октябрьская железная дорога:**
+- Зафиксировано: **18 и 20 отказов** (две строки в справке, вероятно, по разным комплексам/категориям)
+- За 12.03.2025: 13 и 15 отказов соответственно
+- Динамика: **+38,46% и +33,33%**
+
+**Свердловская железная дорога:**
+- Зафиксировано: **28 отказов** (одинаковые значения в двух строках)
+- За 12.03.2025: 23 отказа
+- Динамика: **+21,74%**
+
+**Сводно по двум дорогам:**
+- 2026 год: 46–48 отказов (в зависимости от агрегации)
+- 2025 год: 36–38 отказов
+- Общий рост: **~25–30%**
+
+---
+
+**Примечание:** Данные за 12.03.2025 в справочниках отсутствуют (справки ведутся только с 2026-03-12), однако сравнение по годам реализовано через колонку `failures_2025` в таблице `spravki_failures`.</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=15 &middot; query=6 &middot; guard=3 &middot; 46.5s</span></div><div class="q">Q39. Сравни количество отказов техсредств за первые 15 суток марта 2022 и за вторые 15 суток. Где хуже?</div><div class="tools">indicator -&gt; describe -&gt; describe -&gt; describe[stop] -&gt; describe -&gt; indicator -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=5 &middot; guard=2 &middot; 27.3s</span></div><div class="q">Q40. Каков процент выполнения расписания грузовых поездов по прибытию на конечную станцию на 12 марта 2026? Разбери все 4 компонента (4.1.1–4.1.4).</div><div class="tools">describe -&gt; query -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; indicator -&gt; indicator[stop] -&gt; describe -&gt; query -&gt; query -&gt; query[stop] -&gt; query</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=12 &middot; query=7 &middot; guard=2 &middot; 35.5s</span></div><div class="q">Q41. Сколько потеряно дополнительных доходов из-за опозданий договорных поездов за апрель 2026?</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; query -&gt; query -&gt; describe -&gt; query -&gt; describe[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=10 &middot; query=6 &middot; guard=0 &middot; 26.4s</span></div><div class="q">Q42. Сколько фактов с отклонением от расписания грузовых поездов по прибытию на конечную станцию накоплено за апрель 2026?</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; query -&gt; query -&gt; describe -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+**Ответ:**
+
+По состоянию на 30 апреля 2026 года накоплено **54 955 фактов** отклонения от расписания грузовых поездов по прибытию на конечную станцию (нарастающий итог за апрель).</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=4 &middot; query=1 &middot; guard=0 &middot; 17.5s</span></div><div class="q">Q43. Какой день апреля 2026 был самым «красным» — с наибольшим числом показателей в красной зоне за сутки?</div><div class="tools">describe -&gt; describe -&gt; indicator -&gt; query</div><details><summary>ответ</summary><pre>
+
+## Результат анализа
+
+**Самыми «красными» днями апреля 2026 года стали:**
+
+| Дата | Показателей в красной зоне | Всего показателей |
+|------|---------------------------|-------------------|
+| **5 апреля 2026** | 51 | 313 |
+| **11 апреля 2026** | 51 | 313 |
+| **12 апреля 2026** | 51 | 314 |
+
+Во всех трёх днях зафиксировано по **51 показателю в красной зоне** — максимальное значение за месяц.
+
+Для сравнения: минимальное количество показателей в красной зоне было зафиксировано **25 апреля** (45 показателей).</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=14 &middot; query=7 &middot; guard=2 &middot; 40.8s</span></div><div class="q">Q44. Сколько показателей в красной зоне 1 марта 2022 и 30 апреля 2026? Сравни — где ситуация хуже?</div><div class="tools">describe -&gt; describe -&gt; knowledge -&gt; indicator -&gt; describe[stop] -&gt; describe -&gt; indicator -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=16 &middot; query=7 &middot; guard=4 &middot; 44.1s</span></div><div class="q">Q45. Сколько отказов допущено в локомотивном и инфраструктурном комплексах по суточной справке за 12.03.2026? Сколько поездо-часов задержки они вызвали?</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; indicator[stop] -&gt; describe -&gt; describe[stop] -&gt; query -&gt; describe -&gt; describe -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; describe[stop] -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+**Отказы по комплексам за 12.03.2026:**
+
+| Комплекс | Отказов |
+|----------|---------|
+| Локомотивный | 124 |
+| Инфраструктурный | 67 |
+| **Итого** | **191** |
+
+**Поезда, задержанные по причине отказов техсредств:**
+
+| Код причины | Наименование | Поездов |
+|-------------|--------------|---------|
+| 21 | Отказ техсредств Т (локомотивный комплекс) | 22 |
+| 43 | Отказ техсредств ДИ (инфраструктурный комплекс) | 59 |
+
+**Поездо-часы задержки:** в суточной справке ЦГЦУ за 12.03.2026 показатель поездо-часов задержки по причинам отказов техсредств отсутствует. Справка содержит данные только по количеству поездов, задержанных по каждой причине.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=13 &middot; query=7 &middot; guard=3 &middot; 37.4s</span></div><div class="q">Q46. Как менялся процент выполнения расписания по прибытию на конечную станцию в апреле 2026 — покажи значения на 1, 15 и 30 апреля.</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; query -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Ответ по запросу
+
+Поиск в базе данных ежедневных докладов ЦГЦУ за апрель 2026 года (доступен период с 2022-03-01 по 2026-04-30) **не выявил показателя** с точным названием «процент выполнения расписания по прибытию на конечную станцию».
+
+### Имеющиеся смежные показатели в таблице `metrics`:
+
+| Название показателя | Тип данных |
+|---------------------|------------|
+| Количество фактов опоздания груз. поездов по прибытию на конеч. станцию, в т.ч. по ответст. | абсолютное число |
+| Количество фактов с отклон. от расписания груз. поездов по прибытию на конеч. станцию | абсолютное число |
+| Процент поездов, следующих с отклонением от договор. времени | процент (%) |
+
+### Вывод
+
+Точный показатель «процент выполнения расписания по прибытию на конечную станцию» в базе данных **отсутствует**. Имеются только показатели в абсолютных величинах (количество фактов опоздания/отклонения) и общий процент поездов с отклонением от договорного времени.
+
+Для получения суточных значений за 1, 15 и 30 апреля 2026 года по имеющимся показателям — уточните, какой из смежных показателей требуется проанализировать.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=11 &middot; query=6 &middot; guard=0 &middot; 33.2s</span></div><div class="q">Q47. Сравни среднесуточное количество показателей в красной зоне за первые 15 дней апреля 2026 и за вторые 15 дней. Где хуже?</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; knowledge -&gt; describe -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Сравнение среднесуточного количества показателей в красной зоне за апрель 2026 г.
+
+| Период | Дней | Суммарное кол-во | Среднее в сутки |
+|--------|------|------------------|-----------------|
+| 1–15 апреля | 15 | 736 | **49,07** |
+| 16–30 апреля | 15 | 712 | **47,47** |
+
+**Вывод:** хуже показатели были в первые 15 дней апреля 2026 г. — среднесуточное количество показателей в красной зоне составило 49,07 против 47,47 во вторые 15 дней. Разница составляет +1,60 показателя в сутки (на 3,4% выше).
+
+Во второй декаде апреля наблюдается улучшение ситуации: снижение среднего числа показателей в красной зоне на 1,6 пункта в сутки.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=9 &middot; query=6 &middot; guard=0 &middot; 31.2s</span></div><div class="q">Q48. Проанализируй выполнение показателя «Доля грузовых отправок в груженых вагонах, доставленных в срок» по состоянию на 12 марта 2026. Приведи значения за сутки, с начала месяца и с начала года, отклонения и зону.</div><div class="tools">indicator -&gt; describe -&gt; describe -&gt; query -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Анализ показателя «Доля груз. отправок в груж. вагонах с собл. установл. срока доставки» (индикатор 2.1) по состоянию на 12 марта 2026 г.
+
+| Показатель | Значение | Отклонение от плана |
+|------------|----------|---------------------|
+| За сутки (day_fact) | **96,53%** | -2,47 п.п. |
+| С начала месяца (month_fact) | **95,84%** | -3,16 п.п. |
+| С начала года (year_fact) | **98,15%** | -0,85 п.п. |
+
+**Зона выполнения:** 2
+
+---
+
+**Выводы:**
+
+Показатель не выполняется по всем трём горизонтам планирования. Наибольшее отклонение наблюдается в месячном разрезе (-3,16 п.п.), что указывает на системную проблему с соблюдением сроков доставки в текущем месяце. Годовой показатель также не достигает плана (-0,85 п.п.).
+
+Рекомендуется провести анализ причин снижения доли отправок, доставленных в срок, с привлечением служб дорог и транспортных компаний.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=5 &middot; query=0 &middot; guard=0 &middot; 15.7s</span></div><div class="q">Q49. Какие основные причины и факторы влияют на невыполнение показателя доли отправок в срок согласно справочной литературе?</div><div class="tools">knowledge -&gt; knowledge -&gt; knowledge -&gt; knowledge -&gt; knowledge</div><details><summary>ответ</summary><pre>
+
+Поиск по справочной литературе РЖД в данный момент недоступен — возникает системная ошибка модели эмбеддинга (HTTP 400). 
+
+Для получения информации о факторах, влияющих на невыполнение доли отправок в срок, необходимо:
+
+1. **Повторить запрос позже** — проблема может быть временной сбоем сервиса поиска.
+2. **Альтернативный подход** — если требуется анализ данных из базы ежедневных докладов ЦГЦУ, могу выполнить SQL-запрос к таблице metrics для получения фактических показателей и их динамики.
+
+Уточните, пожалуйста:
+- Требуется ли информация именно из справочной литературы (ПТЭ, учебники, методические указания)?
+- Или достаточно данных из базы ежедневных докладов ЦГЦУ по факту выполнения показателя?</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=6 &middot; query=3 &middot; guard=0 &middot; 25.8s</span></div><div class="q">Q50. По справкам о работе припортовых станций за 12.03.2026: какова выгрузка на Находке-Восточной, Ванино, Лужской? Сравни с перерабатывающей способностью.</div><div class="tools">knowledge -&gt; describe -&gt; indicator -&gt; query -&gt; query -&gt; query</div><details><summary>ответ</summary><pre>
+
+## Справка по выгрузке припортовых станций за 12.03.2026
+
+| Станция | Дорога | План (ваг.) | Факт (ваг.) | Перераб. способность (ваг.) | Загрузка от мощности |
+|---------|--------|-------------|-------------|---------------------------|---------------------|
+| **ВАНИНО** | ДВОСТ | 989 | 1200 | 1669 | 71,9% |
+| **ЛУЖСКАЯ** | ОКТ | 3567 | 4299 | 6332 | 67,9% |
+| **НАХОДКА-ВОСТОЧНАЯ** | ДВОСТ | 1504 | 1399 | 2587 | 54,1% |
+
+### Анализ
+
+1. **ВАНИНО (Октябрьская ж.д.)** — фактическая выгрузка составила 1200 вагонов, что на 21,3% превышает плановый показатель (989 ваг.). Загрузка перерабатывающей способности — 71,9%. Резерв мощности: 469 вагонов.
+
+2. **ЛУЖСКАЯ (Октябрьская ж.д.)** — факт 4299 вагодов против плана 3567 (+20,6%). Загрузка мощности — 67,9%. Свободный потенциал: 2033 вагона.
+
+3. **НАХОДКА-ВОСТОЧНАЯ (Дальневосточная ж.д.)** — факт 1399 вагонов при плане 1504 (недовыполнение плана на 6,9%). Загрузка мощности снижена до 54,1%. Резерв: 1188 вагонов.
+
+### Вывод
+Две из трёх станций перевыполнили плановые задания по выгрузке. Наибольший резерв перерабатывающей способности используется на станции ВАНИНО (71,9%), наименьший — на НАХОДКА-ВОСТОЧНОЙ (54,1%). По состоянию на 12.03.2026 критической перегрузки портовых узлов не наблюдается.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=11 &middot; query=5 &middot; guard=2 &middot; 29.1s</span></div><div class="q">Q51. По справке технической скорости за 12.03.2026: какие дороги допустили наибольшее невыполнение? Назови значения отклонений.</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; query -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Справка по технической скорости за 12.03.2026
+
+**Дороги с наибольшим невыполнением норматива:**
+
+| Дорога | Норматив, км/ч | Факт, км/ч | Отклонение, км/ч |
+|--------|----------------|------------|------------------|
+| **СВР** | 41.1 | 38.0 | **-3.1** |
+| **ЗСБ** | 51.5 | 49.8 | **-1.7** |
+| **КРС** | 41.1 | 40.5 | **-0.6** |
+| **КБШ** | 44.6 | 44.4 | -0.2 |
+| **СКВ** | 43.0 | 42.8 | -0.2 |
+
+**Итого:** 5 из 17 дорог не выполнили норматив по технической скорости за сутки. Наибольшее отставание зафиксировано на Свердловской (СВР — минус 3,1 км/ч) и Западно-Сибирской (ЗСБ — минус 1,7 км/ч) дорогах.
+
+Остальные дороги план выполнили или перевыполнили (отклонения от +0,2 до +4,6 км/ч).</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=3 &middot; query=1 &middot; guard=0 &middot; 14.2s</span></div><div class="q">Q52. По справке участковой скорости за 12.03.2026: какие три дороги показали наибольшее отставание от нормы?</div><div class="tools">describe -&gt; describe -&gt; query</div><details><summary>ответ</summary><pre>
+
+**Справка по участковой скорости за 12.03.2026**
+
+Три дороги с наибольшим отставанием от нормы:
+
+| Дорога | Норма, км/ч | Факт, км/ч | Отставание, км/ч |
+|---|---|---|---|
+| Свердловская | 35,9 | 31,1 | -4,8 |
+| Западно-Сибирская | 46,9 | 44,8 | -2,1 |
+| Красноярская | 36,1 | 35,0 | -1,1 |
+
+Наибольшее отставание зафиксировано на Свердловской дороге — 4,8 км/ч ниже нормативного значения.</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=15 &middot; query=7 &middot; guard=3 &middot; 39.2s</span></div><div class="q">Q53. Сколько отказов техсредств 1-2 категории допущено 12 марта 2026 по суточной справке? Какова общая продолжительность отказов и сколько поездов задержано?</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; query -&gt; describe[stop] -&gt; query -&gt; indicator[stop] -&gt; indicator -&gt; query -&gt; describe -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=14 &middot; query=5 &middot; guard=3 &middot; 40.7s</span></div><div class="q">Q54. По справке Локомотивы за 12.03.2026: каково содержание парка на Восточном полигоне — план vs факт? Есть ли недосодержание?</div><div class="tools">indicator -&gt; describe -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; describe -&gt; describe -&gt; describe[stop] -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Содержание парка локомотивов на Восточном полигоне за 12.03.2026
+
+**Сводные показатели:**
+
+| Показатель | Значение |
+|------------|----------|
+| План | 3 784 ед. |
+| Факт | 3 726 ед. |
+| Отклонение (дельта) | **-58 ед.** |
+
+**Детализация по дорогам:**
+
+| Дорога | План | Факт | Отклонение |
+|--------|------|------|------------|
+| Восточный | 1 892 | 1 863 | -29 |
+| КРАС | 560 | 560 | 0 |
+| В-СИБ | 397 | 395 | -2 |
+| ЗАБ | 591 | 566 | -25 |
+| ДВОСТ | 344 | 342 | -2 |
+
+**Вывод:** Недосодержание парка локомотивов на Восточном полигоне за сутки составило **58 единиц**. Максимальное недосодержание наблюдается по дорогам «Восточный» (−29 ед.) и ЗАБ (−25 ед.). По дороге КРАС план выполнен полностью.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=6 &middot; query=2 &middot; guard=1 &middot; 22.9s</span></div><div class="q">Q55. Какие управленческие решения предложены по показателю 2.1 («доля грузовых отправок в срок») на 12 марта 2026? Выведи из комментария доклада.</div><div class="tools">describe -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; query -&gt; query</div><details><summary>ответ</summary><pre>
+
+## Управленческие решения по показателю 2.1 («Доля грузовых отправок в срок») за 12 марта 2026 года
+
+**Факт:** Доля грузовых отправок в груженых вагонах, доставленных в срок с начала месяца составляет **95,8%**, что на **1,4 п.п.** ниже уровня 2025 года.
+
+**Управленческое решение:**
+&gt; Оперативный приказ № 944/2 от 12.03.2026 г и.о.ЦДЗО Круглов А.Н. для принятия мер по отправлению отставленных от движения поездов по коду &quot;0&quot;.
+
+**Примечание:** Показатель требует оперативного вмешательства в связи с отрицательной динамикой к прошлому году.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">focused</span> <span class="meta">calls=11 &middot; query=4 &middot; guard=2 &middot; 46.2s</span></div><div class="q">Q56. На 12.03.2026: сколько поездов задержано по кодам 21 и 43 (отказы техсредств)? Соотнеси с данными суточной справки об отказах по локомотивному и инфраструктурному комплексу.</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; describe -&gt; indicator[stop] -&gt; query -&gt; query -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Сводка по задержкам поездов и отказам техсредств на 12.03.2026
+
+### Задержанные поезда по кодам причин
+
+| Код | Наименование причины | Поездов | Вагонов |
+|-----|---------------------|---------|---------|
+| **21** | Отказ техсредств Т | **22** | 1 405 |
+| **43** | Отказ техсредств ДИ | **59** | 3 875 |
+| **Итого** | | **81** | **5 280** |
+
+**Детализация по коду 21 (отказы техсредств Т):**
+- ЗСБ — 9 поездов (600 ваг.)
+- СВР — 4 поезда (259 ваг.)
+- ДВС — 3 поезда (197 ваг.)
+- ВСБ, КРС — по 2 поезда
+- КБШ, ЮУР — по 1 поезду
+
+**Детализация по коду 43 (отказы техсредств ДИ):**
+- КРС — 38 поездов (2 519 ваг.) — основной очаг задержек
+- ЗСБ — 8 поездов (527 ваг.)
+- ВСБ — 5 поездов (324 ваг.)
+- ДВС, СВР — по 3–4 поезда
+- ОКТ — 1 поезд
+
+---
+
+### Отказы техсредств 1–2 категории (суточная справка)
+
+| Подразделение | Отказов факт | Разрешено | Зарегистрировано | Расследовано |
+|--------------|-------------|-----------|-----------------|-------------|
+| **Локомотивный комплекс** | **122** | 122 (100%) | 31 | 30 |
+| **Инфраструктурный комплекс** | **40** | 33 | 16 | 12 |
+| В т.ч. сторонние предприятия ИК | — | 4 | 4 | 0 |
+| **ВСЕГО по инфраструктуре** | **67** | 59 | 23 | 15 |
+
+---
+
+### Корреляция данных
+
+- По коду 43 (отказы техсредств ДИ) зафиксировано **59 поездов**, из них **38 поездов (64,4%)** приходится на КРС — крупнейший узел сети.
+- По локомотивному комплексу зарегистрировано **122 отказа** при 100% разрешении в сутки; по инфраструктурному — **40 отказов** (из них 33 разреше</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">focused</span> <span class="meta">calls=15 &middot; query=7 &middot; guard=3 &middot; 31.8s</span></div><div class="q">Q57. Дай сводный анализ по показателю «доля отправок в срок» на 12.03.2026: факт показателя, причины невыполнения (задержанные поезда по кодам + отказы техсредств), управленческие решения из доклада.</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; describe -&gt; indicator[stop] -&gt; describe[stop] -&gt; describe -&gt; query -&gt; describe -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">expert</span> <span class="meta">calls=12 &middot; query=2 &middot; guard=2 &middot; 23.9s</span></div><div class="q">Q58. Проанализируй выполнение показателя «Доля грузовых отправок в груженых вагонах, доставленных в срок» (показатель 2.1) на 12 марта 2026 года за все три периода — отчётные сутки, с начала месяца, с начала года. Приведи факт, отклонение от плана и к 2025 году по каждому периоду.</div><div class="tools">indicator -&gt; indicator -&gt; indicator[stop] -&gt; indicator -&gt; describe -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; query -&gt; describe -&gt; query -&gt; describe</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">expert</span> <span class="meta">calls=12 &middot; query=7 &middot; guard=2 &middot; 62.5s</span></div><div class="q">Q59. Какие основные причины и факторы повлияли на невыполнение показателя «Доля грузовых отправок в груженых вагонах, доставленных в срок» на 12 марта 2026 года? Приведи структуру задержанных поездов по кодам причин (по сети, итоговая строка).</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; describe -&gt; describe[stop] -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">expert</span> <span class="meta">calls=7 &middot; query=4 &middot; guard=0 &middot; 35.9s</span></div><div class="q">Q60. Приведи конкретные цифры по неэффективному использованию перерабатывающей способности припортовых терминалов на 12.03.2026: итог выгрузки и перерабатывающей способности по сети, и станции с наименьшим использованием.</div><div class="tools">indicator -&gt; describe -&gt; describe -&gt; query -&gt; query -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Данные по неэффективному использованию перерабатывающей способности припортовых терминалов за сутки 12.03.2026
+
+### Сетевой итог
+
+| Показатель | Значение, ед. |
+|------------|---------------|
+| План выгрузки | 15 305 |
+| Факт выгрузки | 17 119 |
+| Перерабатывающая способность | 31 271 |
+| **Использование способности** | **54,7%** |
+
+Неиспользованная перерабатывающая способность по сети: **14 152 ед.** (45,3% от мощности).
+
+### Станции с наименьшим использованием перерабатывающей способности (ТОП-5)
+
+| Дорога | Станция / Терминал | Факт выгрузки | Мощность | Использование, % | Неиспользованная мощность |
+|--------|-------------------|---------------|----------|------------------|---------------------------|
+| ОКТ | СВЕТЛЫЕ НЕФТ.ПР. | 1 | 576 | **0,2%** | 575 |
+| ДВОСТ | КАМЕННЫЙ УГОЛЬ | 1 | 180 | **0,6%** | 179 |
+| СКАВ | ООО «ГАЗПРОМ ТРАНССЕРВИС» | 1 | 45 | **2,2%** | 44 |
+| СКАВ | ООО «ПОРТ МЕЧЕЛ-ТЕМРЮК» | 3 | 90 | **3,3%** | 87 |
+| ДВОСТ | ЦВЕТНЫЕ МЕТАЛЛЫ | 1 | 20 | **5,0%** | 19 |
+
+### Выводы
+
+По итогам суток перерабатывающая способность припортовых терминалов использована на **54,7%**. Критически низкий уровень загрузки (менее 5%) зафиксирован на пяти терминалах, что свидетельствует о значительном резерве мощности. Наибольший абсолютный резерв — на станции СВЕТЛЫЕ НЕФТ.ПР. (575 ед., 99,8% неиспользовано).</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">expert</span> <span class="meta">calls=4 &middot; query=1 &middot; guard=0 &middot; 25.3s</span></div><div class="q">Q61. Какова техническая и участковая скорость по сети ОАО РЖД на 12.03.2026 и на каких дорогах зафиксировано наибольшее невыполнение к норме?</div><div class="tools">datetime -&gt; describe -&gt; describe -&gt; query</div><details><summary>ответ</summary><pre>
+
+## Скоростные показатели по сети ОАО «РЖД» за сутки на 12.03.2026
+
+### Участковая скорость (км/ч)
+
+| Показатель | Значение |
+|------------|----------|
+| Норма по сети | 38,2 |
+| Факт за сутки | 38,0 |
+| Отклонение от нормы | **-0,2** |
+
+### Техническая скорость (км/ч)
+
+| Показатель | Значение |
+|------------|----------|
+| Норма по сети | не агрегирована в справке |
+| Факт за сутки | варьируется по дорогам |
+| Отклонение от нормы | варьируется по дорогам |
+
+---
+
+### Дороги с наибольшим невыполнением к норме
+
+**Участковая скорость — отрицательное отклонение (day_delta):**
+
+| Дорога | Норма | Факт | Откл. |
+|--------|-------|------|-------|
+| **Свердловская** | 35,9 | 31,1 | **-4,8** |
+| **Западно-Сибирская** | 46,9 | 44,8 | **-2,1** |
+| Красноярская | 36,1 | 35,0 | -1,1 |
+
+**Техническая скорость — отрицательное отклонение (day_delta):**
+
+| Дорога | Норма | Факт | Откл. |
+|--------|-------|------|-------|
+| **СВР** | 41,1 | 38,0 | **-3,1** |
+| **ЗСБ** | 51,5 | 49,8 | **-1,7** |
+| КРС | 41,1 | 40,5 | -0,6 |
+
+---
+
+### Выводы
+
+1. По участковой скорости сеть в целом не выполнила норму на **0,2 км/ч**. Лидер по отставанию — **Свердловская железная дорога** (недовыполнение 4,8 км/ч к норме).
+2. По технической скорости наиболее проблемные участки: дорога **СВР** (отклонение -3,1 км/ч) и **ЗСБ** (-1,7 км/ч).
+3. Положительную динамику по участковой скорости показали: Приволжская (+2,6), Московская (+2,2), Восточно-Сибирская (+1,3) дороги.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">expert</span> <span class="meta">calls=13 &middot; query=6 &middot; guard=2 &middot; 48.2s</span></div><div class="q">Q62. Проанализируй работу важнейших сортировочных станций на 12.03.2026: на каких станциях наибольшее превышение простоя транзитного вагона с переработкой и рабочего парка над нормативом.</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; indicator[stop] -&gt; indicator -&gt; query -&gt; describe -&gt; describe[stop] -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Анализ работы важнейших сортировочных станций за сутки 12.03.2026
+
+По данным таблицы `spravki_sort_stations` выявлены станции с наибольшим превышением нормативов по двум ключевым показателям: **простой транзитного вагона с переработкой** и **рабочий парк**.
+
+### 1. Превышение простоя транзитного вагона с переработкой над нормативом (часы)
+
+| Станция | Факт | Норматив | Превышение |
+|---------|------|----------|------------|
+| **ЮДИНО** | 56.11 | 19.00 | **+37.11** |
+| **ДЕМА** | 37.75 | 13.48 | +24.27 |
+| **ПЕРМЬ-СОРТ** | 39.49 | 17.00 | +22.49 |
+| **КОЧЕТОВКА I** | 39.05 | 18.00 | +21.05 |
+| **БРЯНСК-ЛЬГОВ** | 40.09 | 21.40 | +18.69 |
+
+### 2. Превышение рабочего парка над нормативом (вагоны)
+
+| Станция | Факт | Норматив | Превышение |
+|---------|------|----------|------------|
+| **АГРЫЗ** | 2861 | 1633 | **+1228** |
+| **ХАБАРОВСК II** | 5040 | 3827 | +1213 |
+| **ЮДИНО** | 2794 | 1722 | +1072 |
+| **ДЕМА** | 3655 | 2650 | +1005 |
+| **БРЯНСК-ЛЬГОВ** | 3305 | 2300 | +1005 |
+
+### Выводы
+
+Наиболее критичная ситуация сложилась на станциях:
+
+1. **ЮДИНО** — лидеры по обоим показателям: превышение простоя транзитного вагона с переработкой **+37.11 часа**, рабочего парка **+1072 вагона**.
+2. **ДЕМА** — второе место по простоям (+24.27 часа) и четвёртое по рабочему парку (+1005 вагонов).
+3. **АГРЫЗ** — абсолютный лидер по превышению рабочего парка (**+1228 вагонов**), при этом простой транзитного вагона превышает норматив на +17.54 часа.
+4. **ХАБАРОВСК II** — второе место по рабоче</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">expert</span> <span class="meta">calls=9 &middot; query=4 &middot; guard=1 &middot; 40.5s</span></div><div class="q">Q63. Дай характеристику отказов технических средств 1–2 категории на 12.03.2026: сколько всего по сети, динамика к 2025 году, и по каким комплексам (локомотивный, инфраструктурный, вагонный) больше всего.</div><div class="tools">indicator -&gt; describe -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; query -&gt; query -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Характеристика отказов технических средств 1–2 категории на 12.03.2026
+
+### Сеть в целом
+
+| Показатель | Значение |
+|------------|----------|
+| Отказов за сутки (12.03.2026) | **2 140** |
+| Отказов за аналогичный период 2025 года | 1 601 |
+| Динамика к 2025 году | **+23,5%** |
+
+### Разбивка по комплексам
+
+| Комплекс | Отказов (2026) | Отказов (2025) | Динамика | Устранено | Зарегистрировано | Расследуется |
+|----------|----------------|----------------|----------|-----------|------------------|--------------|
+| **Локомотивный** | 124 | 101 | +22,8% | 124 | 31 | 30 |
+| **Инфраструктурный** | 67 | 27 | **+148,2%** | 59 | 23 | 15 |
+| **Вагонный** | 31 | 40 | –22,5% | 31 | 22 | 0 |
+
+### Выводы
+
+1. **Общий объём отказов вырос на 23,5%** — с 1 601 до 2 140 за сутки.
+2. **По комплексу:**
+   - Наибольшее абсолютное количество отказов — в **локомотивном комплексе** (124 ед.).
+   - Наиболее критичная динамика — в **инфраструктурном комплексе**: рост в 2,5 раза (+148,2%). Требует дополнительного анализа причин.
+   - В **вагонном комплексе** наблюдается снижение отказов на 22,5% (с 40 до 31 ед.).
+3. Коэффициент устранения: по локомотивному и вагонному комплексам — 100%, по инфраструктурному — 88,1%.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">expert</span> <span class="meta">calls=6 &middot; query=4 &middot; guard=0 &middot; 41.5s</span></div><div class="q">Q64. Сколько отставленных (задержанных) груженых поездов на сети на 12.03.2026, по каким дорогам их больше всего и какова разбивка по кодам ответственности ОАО РЖД (коды 1, 21, 22, 43)?</div><div class="tools">describe -&gt; describe -&gt; query -&gt; query -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Справка о задержанных (отставленных) груженых поездах на сети ОАО «РЖД» за 12.03.2026
+
+**Общее количество отставленных поездов по сети:** 475 поездов
+
+### Разбивка по дорожам (по убыванию количества поездов)
+
+| Дорога | Код | Кол-во поездов |
+|--------|-----|----------------|
+| Свердловская ж.д. | СКВ | 84 |
+| Красноярская ж.д. | КРС | 54 |
+| Дальневосточная ж.д. | ДВС | 51 |
+| Октябрьская ж.д. | ОКТ | 40 |
+| Восточно-Сибирская ж.д. | ВСБ | 40 |
+| Приволжская ж.д. | ПРВ | 38 |
+| Западно-Сибирская ж.д. | ЗСБ | 32 |
+| Кузбасская ж.д. | КБШ | 29 |
+| Северная ж.д. | СВР | 24 |
+| Забайкальская ж.д. | ЗАБ | 19 |
+| Южно-Уральская ж.д. | ЮУР | 18 |
+| Горьковская ж.д. | ГОР | 14 |
+| Северная ж.д. (восточная) | СЕВ | 13 |
+| Юго-Восточная ж.д. | ЮВС | 10 |
+| Московская ж.д. | МСК | 9 |
+
+**Топ-3 дороги по количеству задержанных поездов:** Свердловская (84), Красноярская (54), Дальневосточная (51). Совместно — 189 поездов (39,8% от сетевого итога).
+
+### Разбивка по кодам ответственности ОАО «РЖД» (по сети)
+
+| Код | Причина | Кол-во поездов |
+|-----|---------|----------------|
+| 1 | Неприём грузополучателем | 152 |
+| 43 | Отказ техсредств дистанции инфраструктуры (ДИ) | 59 |
+| 22 | Нет локомотива перевозчика | 27 |
+| 21 | Отказ техсредств тяги (Т) | 22 |
+
+**Ключевые выводы:**
+- Доминирующая причина задержек — неприём грузополучателем (код 1), на долю которого приходится 32,0% от общего числа.
+- Отказы техсредств ДИ (код 43) — вторая по значимости причина (59 поездов, 12,4%).
+- Суммарн</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">expert</span> <span class="meta">calls=14 &middot; query=6 &middot; guard=2 &middot; 35.1s</span></div><div class="q">Q65. На основе всех выявленных факторов невыполнения показателя доставки в срок на 12.03.2026 предложи комплекс управленческих решений по вводу показателя в целевое значение.</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; indicator[stop] -&gt; query -&gt; describe[stop] -&gt; indicator -&gt; describe -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=0 &middot; query=0 &middot; guard=0 &middot; 9.9s</span></div><div class="q">Q66. Привет! Кто ты и что ты умеешь? Приведи 3 примера вопросов.</div><div class="tools"></div><details><summary>ответ</summary><pre>
+
+## Оператор аналитического ассистента ЦГЦУ ОАО «РЖД»
+
+**Роль:** Аналитический ассистент по ежедневным докладам Главного центра управления (ЦГЦУ) ОАО «РЖД**. Аудитория — руководство предприятия.
+
+### Доступные инструменты:
+- **Текущая дата и время** — получение актуального времени в указанном часовом поясе.
+- **Поиск показателей** — семантический поиск метрик в базе данных по смыслу запроса (вместо поиска по подстроке).
+- **SQL-запросы** — выполнение read-only SELECT/WITH к PostgreSQL для извлечения данных из ежедневных докладов ЦГЦУ.
+- **Описание таблиц** — получение структуры таблиц с колонками, типами, комментариями и образцами значений.
+- **Поиск по справочной литературе РЖД** — поиск в ПТЭ, учебниках, справочниках сокращений.
+
+### Примеры вопросов:
+
+1. **«Какова фактическая провозная способность участка Москва-Пассажирская — Тверь за последние 7 суток?»**
+   *Механизм:* find_indicator → query (поиск показателя пропускной способности, выборка данных за период).
+
+2. **«Сколько поездов сошло с рельсов на сети РЖД в текущем месяце?»**
+   *Механизм:* find_indicator → query (поиск показателя сходства подвижного состава, агрегация по нарастающему итогу месяца).
+
+3. **«Что означает аббревиатура ЦГЦУ согласно нормативным документам РЖД?»**
+   *Механизм:* search_knowledge (поиск в справочной литературе РЖД).</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=1 &middot; query=0 &middot; guard=0 &middot; 11.5s</span></div><div class="q">Q67. За какие даты у тебя есть данные в базе?</div><div class="tools">describe</div><details><summary>ответ</summary><pre>
+
+Доступный диапазон дат в базе данных:
+
+**Основные показатели ЦГЦУ (таблица metrics):**  
+с **01.03.2022 по 30.04.2026** — всего 62 уникальные даты отчётов.
+
+**Справочные таблицы-источники:**
+- `spravki_delays`, `spravki_failures`, `spravki_locomotives`, `spravki_port_stations`, `spravki_sort_stations`, `spravki_speed` — только за **12.03.2026** (по 1 дате на каждую таблицу).
+- `spravki_speed_restrictions` — с **06.03.2026 по 12.03.2026** (7 дат).
+
+Для запросов по оперативным показателям работы сети доступны данные за весь период с марта 2022 года. Детализированные справочные данные (причины задержек, отказы, порты и т.д.) представлены только за март 2026 года.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=1 &middot; query=0 &middot; guard=0 &middot; 2.7s</span></div><div class="q">Q68. Какое сегодня число?</div><div class="tools">datetime</div><details><summary>ответ</summary><pre>
+
+Сегодня 13 июня 2026 года (суббота). Время по Москве: 03:37.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=3 &middot; query=1 &middot; guard=0 &middot; 9.7s</span></div><div class="q">Q69. Сколько всего показателей в отчётности ЦГЦУ?</div><div class="tools">describe -&gt; describe -&gt; query</div><details><summary>ответ</summary><pre>
+
+В отчётности ЦГЦУ учтено **335 уникальных показателей**.
+
+Данные получены из таблицы `metrics` (основной источник ежедневных докладов) и подтверждены справочником `indicator_index`. Показатели охватывают два раздела: I и II, с единицами измерения в диапазоне от абсолютных величин (шт., вагон, ед.) до относительных (%), финансовых (млн. руб., млрд. руб.) и эксплуатационных (км/ч, км/сут, тяг.ед./сут.).</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">behavioral</span> <span class="meta">calls=12 &middot; query=9 &middot; guard=1 &middot; 35.1s</span></div><div class="q">Q70. Какие показатели были в красной зоне на 30 апреля 2026?</div><div class="tools">describe -&gt; describe -&gt; indicator -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query -&gt; query</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=11 &middot; query=3 &middot; guard=1 &middot; 22.3s</span></div><div class="q">Q71. Какая погрузка будет завтра?</div><div class="tools">datetime -&gt; indicator -&gt; indicator -&gt; describe -&gt; query -&gt; describe -&gt; describe[stop] -&gt; describe -&gt; describe -&gt; query -&gt; query</div><details><summary>ответ</summary><pre>
+
+Данные за завтрашнюю дату (14 июня 2026 г.) в системе ежедневных докладов ЦГЦУ отсутствуют.
+
+Последний доступный отчет в базе сформирован за **30 апреля 2026 г.** Данные за май и июнь 2026 года не загружены.
+
+Для получения прогноза погрузки необходимо дождаться формирования отчета за соответствующую дату или обратиться к плановым документам.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=4 &middot; query=0 &middot; guard=0 &middot; 15.9s</span></div><div class="q">Q72. Что такое участковая скорость? Дай определение из нормативной литературы.</div><div class="tools">knowledge -&gt; knowledge -&gt; knowledge -&gt; knowledge</div><details><summary>ответ</summary><pre>
+
+К сожалению, инструмент поиска по справочной литературе РЖД временно недоступен (ошибка модели эмбеддинга). 
+
+На основании общих знаний о железнодорожной терминологии: **участковая скорость** — это отношение длины участка пути от станции отправления до станции прибытия к времени движения поезда на этом участке, включая время стоянок на промежуточных станциях.
+
+Для получения точного нормативного определения из действующих документов РЖД (ПТЭ, учебники по организации перевозок) рекомендую обратиться к соответствующим разделам указанных источников или повторить запрос позднее при восстановлении работы системы поиска.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=4 &middot; query=1 &middot; guard=0 &middot; 9.7s</span></div><div class="q">Q73. Что означает код ЦД в структуре ОАО РЖД?</div><div class="tools">knowledge -&gt; describe -&gt; describe -&gt; query</div><details><summary>ответ</summary><pre>
+
+Код **ЦД** в структуре ОАО «РЖД» означает:
+
+**Центральная дирекция управления движением**
+
+Данный код является телеграфным кодом подразделения и используется в системах учёта (в частности, в поле `gtsu_search.responsible`) для идентификации ответственного подразделения.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=9 &middot; query=5 &middot; guard=0 &middot; 31.1s</span></div><div class="q">Q74. Покажи динамику погрузки по дням за апрель 2026.</div><div class="tools">describe -&gt; indicator -&gt; indicator -&gt; query -&gt; query -&gt; describe -&gt; query -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Динамика погрузки за апрель 2026 года
+
+**Показатель:** Погрузка общая, в т.ч. (тыс. тонн)
+
+| Дата | Суточная погрузка | Дата | Суточная погрузка |
+|------|-------------------|------|-------------------|
+| 01.04 | 3279,5 | 16.04 | 3201,8 |
+| 02.04 | 3169,3 | 17.04 | 3239,8 |
+| 03.04 | 3097,8 | 18.04 | 3219,1 |
+| 04.04 | 3086,9 | 19.04 | 3067,3 |
+| 05.04 | 2982,5 | 20.04 | 3233,4 |
+| 06.04 | 3108,0 | 21.04 | 3240,1 |
+| 07.04 | 3103,7 | 22.04 | 3207,5 |
+| 08.04 | 3182,6 | 23.04 | 3190,8 |
+| 09.04 | 3199,5 | 24.04 | 3190,4 |
+| 10.04 | 3167,5 | 25.04 | 3147,3 |
+| 11.04 | 3133,9 | 26.04 | 3074,4 |
+| 12.04 | 3010,1 | 27.04 | 3145,6 |
+| 13.04 | 3136,9 | 28.04 | 3148,1 |
+| 14.04 | 3219,0 | 29.04 | 3200,9 |
+| 15.04 | 3248,8 | 30.04 | 3031,9 |
+
+**Сводные показатели:**
+- **Минимум:** 2982,5 тыс. тонн (05.04)
+- **Максимум:** 3279,5 тыс. тонн (01.04)
+- **Среднесуточная погрузка:** ~3160 тыс. тонн
+- **Разброс:** 297 тыс. тонн (9,9%)
+
+Динамика за месяц демонстрирует стабильный уровень погрузки в диапазоне 3000–3280 тыс. тонн/сутки с минимальными колебаниями.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=1 &middot; query=0 &middot; guard=0 &middot; 6.2s</span></div><div class="q">Q75. Какие данные есть за 1 мая 2026?</div><div class="tools">describe</div><details><summary>ответ</summary><pre>
+
+Данные за 1 мая 2026 года **отсутствуют**.
+
+Максимальная доступная дата в системе — **30 апреля 2026 года** (в таблице `reports.report_date`). Все таблицы-справки (`spravki_*`) содержат данные только за март 2026 года.
+
+Если требуется информация за ближайшую доступную дату или другой период — уточните запрос.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=10 &middot; query=4 &middot; guard=1 &middot; 37.2s</span></div><div class="q">Q76. Сколько отказов техсредств было на Марсе 12.03.2026?</div><div class="tools">datetime -&gt; describe -&gt; describe -&gt; indicator -&gt; query -&gt; query -&gt; knowledge -&gt; query -&gt; describe[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+**По запросу: отказы техсредств на «Марсе» за 12.03.2026**
+
+Данные отсутствуют. В таблице `spravki_failures` (отказы техсредств 1-2 категории по подразделениям) за 12 марта 2026 года подразделение/участок с названием «Марс» не фигурирует.
+
+В справочнике подразделений, покрывающих сеть ОАО РЖД на указанную дату, отсутствуют записи, содержащие «марс» или схожие значения.
+
+**Справка:** за 12.03.2026 общее количество отказов техсредств по сети составило **234 единицы** (из них зарегистрировано — 77, расследовано — 45).
+
+Уточните, пожалуйста:
+- имеется ли в виду конкретная железная дорога, комплекс или подразделение?
+- возможно, опечатка в названии объекта?</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=4 &middot; query=0 &middot; guard=0 &middot; 13.2s</span></div><div class="q">Q77. Дай определение сортировочной станции по учебной литературе.</div><div class="tools">knowledge -&gt; knowledge -&gt; knowledge -&gt; knowledge</div><details><summary>ответ</summary><pre>
+
+Поиск по справочной литературе РЖД временно недоступен (ошибка модели эмбеддинга). 
+
+На основании отраслевых стандартов: **Сортировочная станция** — железнодорожная станция, основное назначение которой заключается в формировании и расформировании составных поездов, сортировке вагонов по направлениям следования, а также выполнении технических операций с подвижным составом. Сортировочные станции оснащаются горловинами и сортировочными полями (парками) для проведения сортировочной работы.
+
+Для получения точного цитирования из учебной литературы РЖД рекомендуется повторить запрос при восстановлении доступа к системе поиска по базе знаний.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=8 &middot; query=4 &middot; guard=0 &middot; 19.1s</span></div><div class="q">Q78. Какая средняя участковая скорость по сети на 1 марта 2022?</div><div class="tools">indicator -&gt; indicator -&gt; describe -&gt; describe -&gt; query -&gt; query -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+**Средняя участковая скорость по сети ОАО «РЖД» за сутки 1 марта 2022 г. составила 37,3 км/ч.**</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=14 &middot; query=7 &middot; guard=4 &middot; 35.0s</span></div><div class="q">Q79. Сравни красную зону на 1 марта 2022 и 30 апреля 2026.</div><div class="tools">indicator -&gt; describe -&gt; indicator -&gt; query -&gt; describe -&gt; indicator[stop] -&gt; describe[stop] -&gt; query -&gt; describe -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Сравнение красной зоны на 01.03.2022 и 30.04.2026
+
+**Статус данных:** В таблице `reports` присутствуют записи за обе даты (подтверждено). Колонка `red_count` содержит количество показателей в красной зоне для каждого отчёта.
+
+**Диапазон значений по всей выборке (62 отчёта):**
+- red_count: 45 – 93
+
+**Проблема:** Запросы к БД для извлечения конкретных значений `red_count` за указанные даты вернули пустой результат, несмотря на наличие дат в таблице. Это может указывать на техническую ошибку при выполнении запроса или специфическое форматирование данных.
+
+**Рекомендация:** Для получения точных значений red_count за 01.03.2022 и 30.04.2026 требуется повторный запрос с корректной синтаксической конструкцией, так как текущие попытки не дали результата.
+
+Если необходимо — могу выполнить уточняющий запрос к БД для извлечения конкретных значений красной зоны за указанные даты.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=9 &middot; query=1 &middot; guard=2 &middot; 22.2s</span></div><div class="q">Q80. Сколько вагонов выгружено на припортовой станции Лужская на 12.03.2026?</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; indicator[stop] -&gt; describe -&gt; describe -&gt; query</div><details><summary>ответ</summary><pre>
+
+По данным за 12.03.2026 на припортовой станции **Лужская** (Октябрьская ж/д) фактическая выгрузка составила **4 299 вагонов**.
+
+Дополнительные показатели по станции:
+- План выгрузки: 3 567 ваг.
+- Перерабатывающая способность: 6 332 ваг.
+- Наличие вагонов (всего): 19 667 ваг.</pre></details></div><div class="card bad"><div class="hd"><span class="badge bad">ЗАСТРЯЛ (cap)</span> <span class="grp">behavioral</span> <span class="meta">calls=12 &middot; query=6 &middot; guard=1 &middot; 24.9s</span></div><div class="q">Q81. Какова техническая скорость на Дальневосточной дороге на 12.03.2026?</div><div class="tools">describe -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; indicator -&gt; query -&gt; query -&gt; query -&gt; query[stop] -&gt; query[stop] -&gt; query[stop] -&gt; knowledge</div><details><summary>ответ</summary><pre><i>нет ответа: turn-cap</i></pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=9 &middot; query=3 &middot; guard=1 &middot; 24.6s</span></div><div class="q">Q82. Перечисли все коды причин задержек поездов из справки.</div><div class="tools">describe -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; indicator -&gt; query -&gt; query -&gt; describe -&gt; query</div><details><summary>ответ</summary><pre>
+
+## Коды причин задержек поездов (справка)
+
+На основании данных таблицы `spravki_delays` приведены все коды причин задержек/срыва сроков доставки:
+
+| Код | Расшифровка причины |
+|-----|---------------------|
+| 0   | Без диспетчерского приказа |
+| 1   | Неприём грузополучателем |
+| 2   | Неприём на границе (пограничный) |
+| 4   | Другой вид транспорта |
+| 5   | Временное размещение подвижного состава |
+| 6   | Ожидание накопления судового парка |
+| 21  | Отказ технических средств Т |
+| 22  | Нет локомотива перевозчика |
+| 24  | Нет локомотива |
+| 43  | Отказ технических средств ДИ |
+| 44  | Несвоевременная очистка |
+| 92  | Угроза теракта |
+
+**Всего: 12 кодов причин задержек.**
+
+Данные актуальны на последнюю отчётную дату. Для анализа динамики по конкретным датам или дорогам используйте таблицу `spravki_delays` с фильтрацией по `report_date` и `road_code`.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=9 &middot; query=4 &middot; guard=1 &middot; 33.1s</span></div><div class="q">Q83. Какой показатель хуже всего выполнен на 12.03.2026 по отклонению от плана?</div><div class="tools">describe -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; indicator -&gt; query -&gt; query -&gt; query -&gt; query[stop]</div><details><summary>ответ</summary><pre>
+
+## Результат анализа по состоянию на 12.03.2026
+
+**Худший показатель по отклонению от плана за сутки:**
+
+| Показатель | № индикатора | Ед. изм. | Факт, % | Откл. от плана, п.п. |
+|------------|--------------|----------|---------|---------------------|
+| Доля груз. отправок в груж. вагонах с соблюден. установленной срока доставки | 2.1 | % | 96.53 | **-2.47** |
+
+Показатель не выполнен на **2,47 п.п.** — фактическое значение составило 96,53% при плановом уровне около 99%.
+
+**Следующие по величине отрицательные отклонения:**
+- ЦДРП (18.1.9), ДОСС (18.1.7) — по -1,0 п.п.
+- ЦДРП (18.2.9), ДОСС (18.2.7) — по -1,0 п.п.
+- ЦДМВ (18.2.6) — -1,0 п.п.
+
+**Вывод:** Ключевая проблема дня — снижение доли грузовых отправок в вагонах с соблюдением установленного срока доставки. Требует анализа причин отставания на 2,47 п.п. относительно плана.</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=3 &middot; query=0 &middot; guard=0 &middot; 12.6s</span></div><div class="q">Q84. Что такое перерабатывающая способность припортовой станции?</div><div class="tools">knowledge -&gt; describe -&gt; describe</div><details><summary>ответ</summary><pre>
+
+**Перерабатывающая способность припортовой станции** — это расчетный (плановый) объем грузовой работы, который станция способна выполнить за сутки в установленных условиях эксплуатации.
+
+В системе ежедневных докладов ЦГЦУ этот показатель отражается как **capacity** и используется для сравнения с фактической выгрузкой (**load_fact**). Соотношение этих величин позволяет оценивать:
+- степень загрузки инфраструктуры порта;
+- наличие резервов или дефицита пропускной способности;
+- необходимость дополнительных мер по организации грузовой работы.
+
+Данные о перерабатывающей способности припортовых станций содержатся в таблице `spravki_port_stations` и обновляются ежедневно для каждой станции сети ОАО «РЖД».</pre></details></div><div class="card good"><div class="hd"><span class="badge good">OK ОТВЕТ</span> <span class="grp">behavioral</span> <span class="meta">calls=14 &middot; query=2 &middot; guard=3 &middot; 40.0s</span></div><div class="q">Q85. Сколько локомотивов недосодержано на Восточном полигоне на 12.03.2026?</div><div class="tools">describe -&gt; indicator -&gt; describe -&gt; indicator -&gt; describe[stop] -&gt; indicator[stop] -&gt; describe -&gt; describe -&gt; describe[stop] -&gt; indicator -&gt; describe -&gt; describe -&gt; query -&gt; query</div><details><summary>ответ</summary><pre>
+
+**По состоянию на 12.03.2026 по Восточному полигону:**
+
+| Дорога | План | Факт | Отклонение |
+|--------|------|------|------------|
+| Восточный | 1 892 | 1 863 | −29 |
+| В-СИБ | 397 | 395 | −2 |
+| ДВОСТ | 344 | 342 | −2 |
+| ЗАБ | 591 | 566 | −25 |
+| КРАС | 560 | 560 | 0 |
+
+**Итого недосодержание: 58 локомотивов.**</pre></details></div></div></body></html>

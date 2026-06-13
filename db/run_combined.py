@@ -43,6 +43,7 @@ def reset():
     try:
         S._recent_q.clear(); S._consec_zero[0]=0; S._find_calls[0]=0
         S._describe_calls[0]=0; S._query_calls[0]=0
+        S._tool_calls[0]=0
     except Exception: pass
 
 def run_one(group, q):

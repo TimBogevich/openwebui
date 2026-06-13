@@ -139,6 +139,24 @@ _query_calls = [0]
 _QVOL_WARN = 4    # 5th query -> nudge
 _QVOL_BLOCK = 6   # 7th query -> hard stop
 
+# Round-2: GLOBAL exploration budget across ALL tools (describe+find+query).
+# The model was escaping the query-only block by switching to describe/find.
+# Once total exploration calls exceed _TOOL_BUDGET, every tool returns the same
+# hard "answer now" stop so it cannot dodge by changing tool.
+_tool_calls = [0]
+_TOOL_BUDGET = 9   # ~ describe + find + a few queries; beyond this = wandering
+_STUCK_MSG = ("\u26d4 СТОП: израсходован бюджет обращений к БД по этому вопросу. "
+    "Нужные данные уже среди полученных результатов выше. НЕМЕДЛЕННО сформулируй "
+    "ОТВЕТ на их основе — не вызывай больше describe/find_indicator/query. "
+    "Если одного числа не хватает — дай ответ по имеющимся данным и укажи, чего нет.")
+
+def _budget_check():
+    """Increment the global tool budget; return _STUCK_MSG if exceeded, else None."""
+    _tool_calls[0] += 1
+    if _tool_calls[0] > _TOOL_BUDGET:
+        return _STUCK_MSG
+    return None
+
 
 def _qnorm(sql):
     """Normalize SQL so cosmetic differences don't dodge the guard."""
@@ -167,6 +185,10 @@ def describe(table: str = "") -> str:
     :return: текстовое описание схемы
     """
     import psycopg
+    _stuck = _budget_check()
+    if _stuck:
+        return _stuck
+
 
     # FIX 1: guard on describe — same ring-buffer logic as query().
     # Prevents the model from calling describe('metrics') 9× in a row.
@@ -350,6 +372,10 @@ def query(sql: str) -> str:
     :param sql: SQL SELECT/WITH (только чтение)
     :return: результат в текстовом виде
     """
+    _stuck = _budget_check()
+    if _stuck:
+        return _stuck
+
     # Query-volume / wandering guard (the "gets stuck" fix). Fires BEFORE the
     # identical-query guard so it catches the case where every query is unique.
     _query_calls[0] += 1
@@ -446,6 +472,10 @@ def find_indicator(query: str, k: int = 5) -> str:
     :return: список кандидатов с метаданными
     """
     import psycopg
+    _stuck = _budget_check()
+    if _stuck:
+        return _stuck
+
 
     # Anti-loop: don't let the model re-search with rephrased queries forever.
     # The first call returns 5-10 good candidates — that's enough information.
