@@ -119,43 +119,48 @@ _recent_q = deque(maxlen=_QGUARD_WINDOW)   # holds normalized-sql md5 hashes
 _consec_zero = [0]   # list so we can mutate from inside functions
 _ZERO_BLOCK_AT = 2
 
-# Describe-loop guard: counts TOTAL describe() calls per question. Schema doesn't
-# change mid-question, so calling describe more than twice (e.g. metrics+reports
-# alternating, or one table re-described) is a wandering-loop signal. The
-# identical-call guard above only catches verbatim repeats; this catches the
-# alternating pattern (metrics→reports→metrics→spravki_delays etc.).
+# Describe total-cap guard: a BACKSTOP against runaway describe() calls. The
+# real wandering pathology (re-describing the SAME table) is already caught by
+# the ring-buffer (_qguard_check on tbl_key) above. This total cap only needs to
+# stop a genuine runaway — so it must leave headroom for LEGITIMATE multi-source
+# questions that describe several DIFFERENT tables (metrics + reports + a few
+# spravki_* tables). Was 2, which blocked the 3rd distinct table and broke the
+# expert spravki questions; raised to give that headroom.
 _describe_calls = [0]
-_DESCRIBE_BLOCK_AT = 2
+_DESCRIBE_BLOCK_AT = 6
 
-# Query-volume / wandering guard: counts TOTAL query() calls per question,
-# regardless of whether the SQL is unique or returns rows. This is the missing
-# lever behind "the model gets stuck": cap-hit traces issue 6-8 DIFFERENT,
-# non-zero queries (each dodges the identical-query and zero-result guards) and
-# never commit to an answer — the model already has the data by query 3-4 but
-# keeps re-exploring metrics/spravki until the turn cap. Answered questions use
-# ≤3 queries (avg 1.3); cap-hits average 6.5. After _QVOL_WARN we nudge, after
-# _QVOL_BLOCK we hard-stop with "answer from what you have".
+# Soft query-volume nudge: counts query() calls per question and, past a soft
+# threshold, PREPENDS a gentle "you probably have enough" note to the (still
+# fully returned) result. Advisory only — never withholds data, never blocks a
+# tool, so it cannot break a legitimately data-heavy question (e.g. multi-source
+# expert questions that need a query per spravki table).
 _query_calls = [0]
-_QVOL_WARN = 4    # 5th query -> nudge
-_QVOL_BLOCK = 6   # 7th query -> hard stop
+_QVOL_WARN = 6    # after the 6th query in a question, start nudging (soft only)
 
-# Round-2: GLOBAL exploration budget across ALL tools (describe+find+query).
-# The model was escaping the query-only block by switching to describe/find.
-# Once total exploration calls exceed _TOOL_BUDGET, every tool returns the same
-# hard "answer now" stop so it cannot dodge by changing tool.
-_tool_calls = [0]
-_TOOL_BUDGET = 9   # ~ describe + find + a few queries; beyond this = wandering
-_STUCK_MSG = ("\u26d4 СТОП: израсходован бюджет обращений к БД по этому вопросу. "
-    "Нужные данные уже среди полученных результатов выше. НЕМЕДЛЕННО сформулируй "
-    "ОТВЕТ на их основе — не вызывай больше describe/find_indicator/query. "
-    "Если одного числа не хватает — дай ответ по имеющимся данным и укажи, чего нет.")
+# --- Per-question boundary detection --------------------------------------
+# Every counter here is GLOBAL module state. The test harness reset them by hand
+# between questions, but real Open WebUI has no such hook, so without this they
+# accumulate across questions and can mis-fire (e.g. stop the first call of a new
+# question). Signal: within one question tool calls are seconds apart; between
+# questions there is a long idle gap (user reads the answer, then types). If the
+# gap since the last tool call exceeds _NEWQ_GAP_S, treat it as a NEW question
+# and reset the per-question counters. This can ONLY make guards more lenient.
+import time as _time
+_last_call_ts = [0.0]
+_NEWQ_GAP_S = 40.0   # > inter-call model "thinking" gap, < human read+type time
 
-def _budget_check():
-    """Increment the global tool budget; return _STUCK_MSG if exceeded, else None."""
-    _tool_calls[0] += 1
-    if _tool_calls[0] > _TOOL_BUDGET:
-        return _STUCK_MSG
-    return None
+
+def _maybe_new_question():
+    """Reset per-question counters if enough idle time passed since last tool call."""
+    now = _time.monotonic()
+    gap = now - _last_call_ts[0]
+    _last_call_ts[0] = now
+    if gap > _NEWQ_GAP_S:
+        _query_calls[0] = 0
+        _describe_calls[0] = 0
+        _find_calls[0] = 0
+        _consec_zero[0] = 0
+        _recent_q.clear()
 
 
 def _qnorm(sql):
@@ -185,10 +190,7 @@ def describe(table: str = "") -> str:
     :return: текстовое описание схемы
     """
     import psycopg
-    _stuck = _budget_check()
-    if _stuck:
-        return _stuck
-
+    _maybe_new_question()
 
     # FIX 1: guard on describe — same ring-buffer logic as query().
     # Prevents the model from calling describe('metrics') 9× in a row.
@@ -372,20 +374,8 @@ def query(sql: str) -> str:
     :param sql: SQL SELECT/WITH (только чтение)
     :return: результат в текстовом виде
     """
-    _stuck = _budget_check()
-    if _stuck:
-        return _stuck
-
-    # Query-volume / wandering guard (the "gets stuck" fix). Fires BEFORE the
-    # identical-query guard so it catches the case where every query is unique.
+    _maybe_new_question()
     _query_calls[0] += 1
-    if _query_calls[0] > _QVOL_BLOCK:
-        _query_calls[0] = 0   # reset so the model can resume after answering
-        return ("⛔ СТОП: ты уже выполнил много запросов к БД по этому вопросу. "
-                "Нужные данные почти наверняка уже среди полученных результатов. "
-                "ПРЕКРАТИ запросы и сформулируй ОТВЕТ сейчас на основе того, что есть. "
-                "Если какого-то одного числа действительно не хватает — назови ответ "
-                "по имеющимся данным и укажи, чего именно не хватило. Не продолжай поиск.")
 
     # Anti-loop guard: catch the same SELECT being re-run instead of answering.
     level, prior = _qguard_check(sql)
@@ -422,8 +412,9 @@ def query(sql: str) -> str:
         out = ("⚠️ Внимание: ты уже выполнял ЭТОТ ЖЕ запрос — результат тот же. "
                "Переходи к ОТВЕТУ или измени запрос, не повторяй его снова.\n\n" + out)
     elif _query_calls[0] >= _QVOL_WARN:
-        out = ("⚠️ Внимание: уже сделано несколько запросов. Скорее всего данных "
-               "достаточно — переходи к ОТВЕТУ, а не к новым запросам.\n\n" + out)
+        # Soft, non-blocking nudge — data is still returned in full below.
+        out = ("⚠️ Подсказка: сделано уже несколько запросов; вероятно, данных "
+               "достаточно — рассмотри возможность сформулировать ОТВЕТ.\n\n" + out)
     return out
 
 
@@ -472,10 +463,7 @@ def find_indicator(query: str, k: int = 5) -> str:
     :return: список кандидатов с метаданными
     """
     import psycopg
-    _stuck = _budget_check()
-    if _stuck:
-        return _stuck
-
+    _maybe_new_question()
 
     # Anti-loop: don't let the model re-search with rephrased queries forever.
     # The first call returns 5-10 good candidates — that's enough information.
