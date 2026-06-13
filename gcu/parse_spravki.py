@@ -474,14 +474,27 @@ def ingest_dir(dirpath, report_date_str, force=False):
             print("  [locomotives] not found — skip")
 
         # ── припортовые ──
+        # The port справки come one-file-per-road, but vendors name the road in
+        # the filename inconsistently: short code (ДВОСТ/ОКТ/СКАВ) in some
+        # exports, full road name (Дальневосточная/Октябрьская/Северо-Кавказская)
+        # in others. Match BOTH spellings so a naming change doesn't silently
+        # skip a road. The regex alternation is anchored on 'припортовых'.
         _delete_date(conn, 'spravki_port_stations', report_date)
-        for road_kw, road_code in [('двост', 'ДВОСТ'), ('окт', 'ОКТ'), ('скав', 'СКАВ')]:
-            f = _find(dirpath, f'припортовых.*{road_kw}')
+        port_roads = [
+            ('ДВОСТ', ['двост', 'дальневосточн']),
+            ('ОКТ',   ['окт', 'октябрьск']),
+            ('СКАВ',  ['скав', 'северо-кавказск', 'сев-кавказск']),
+        ]
+        for road_code, kws in port_roads:
+            alt = "|".join(kws)
+            f = _find(dirpath, f'припортовых.*(?:{alt})')
             if f:
                 print(f"  [ports:{road_code}] {os.path.basename(f)}")
                 recs = parse_port_stations(f, report_date, road_code)
                 write_port_stations(conn, recs)
                 print(f"    → {len(recs)} rows")
+            else:
+                print(f"  [ports:{road_code}] not found — skip")
 
         # ── скорость xlsb ──
         _delete_date(conn, 'spravki_speed', report_date)
