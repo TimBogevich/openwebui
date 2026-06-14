@@ -225,78 +225,64 @@ def parse_failures(path, report_date):
 def parse_locomotives(path, report_date):
     """Parse 'Справка Локомотивы.xlsx'.
 
-    Returns list of dicts for spravki_locomotives.
-    Layout: section headers (переменный ток / постоянный ток / тепловозы),
-    then rows: polygon/road, plan, '/', fact, '+/-'
+    Each data row carries ALL THREE traction types side-by-side (not split by
+    section headers): Переменный ток (cols 1-10), Постоянный ток (11-20),
+    Тепловозная тяга (21-30). Within each block:
+      [+0] План всего · [+2] План груз · [+3] Факт всего · [+5] Факт груз ·
+      [+6] +/- всего · [+8] +/- груз · [+9] Резерв
+    The old parser read only the AC-block груз columns and labelled everything
+    section='AC' — dropping DC + diesel entirely and the Резерв/всего-парк. Now we
+    emit ONE record per (road, traction) with всего + груз + delta + reserve.
     """
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     ws = wb.active
     rows = list(ws.iter_rows(values_only=True))
     wb.close()
 
+    BLOCKS = [('AC', 1), ('DC', 11), ('diesel', 21)]  # (traction, base col)
     records = []
-    current_section = 'AC'  # переменный ток default
     current_polygon = None
+    POLYGON_KEYWORDS = ['юго-зап', 'северо-зап', 'восточн', 'западн', 'московск', 'октябрьск']
 
-    SECTION_KEYWORDS = {
-        'переменный': 'AC',
-        'постоянный': 'DC',
-        'тепловоз': 'diesel',
-        'хозяйственн': 'diesel_hoz',
-    }
-    POLYGON_KEYWORDS = ['юго-зап', 'северо-зап', 'восточн', 'западн']
+    def g(i):
+        v = row[i] if i < len(row) else None
+        return int(v) if isinstance(v, (int, float)) else None
 
     for row in rows:
-        vals = [v for v in row if v is not None]
-        if not vals:
-            continue
-
-        first = _clean(row[0]) if len(row) > 0 else None
+        first = _clean(row[0]) if len(row) > 0 and row[0] else None
         if not first:
             continue
-
-        # section header
         fl = first.lower()
-        for kw, sec in SECTION_KEYWORDS.items():
-            if kw in fl:
-                current_section = sec
-                break
-
-        # polygon header
-        for kw in POLYGON_KEYWORDS:
-            if kw in fl:
-                current_polygon = first.strip()
-                break
-
-        # data row: road/polygon name + numbers
-        nums = [v for v in row if isinstance(v, (int, float)) and v != 0 or isinstance(v, str) and v.strip() in ('+/-', '/')]
-        numeric = [v for v in row if isinstance(v, (int, float))]
-
-        # Skip the transposed тепловоз sub-table (rows labelled План/Факт/+/-/Дорога
-        # where roads are columns, not rows — different shape, handled elsewhere).
         if fl.strip() in ('план', 'факт', '+/-', 'дорога'):
             continue
+        if any(kw in fl for kw in ['содержание', 'анализ', 'таблиц', 'страниц',
+                                   'справк', 'полигон', 'переменный', 'постоянный', 'тепловоз']):
+            continue
+        # polygon vs road: a polygon name is also a data row (has aggregate numbers)
+        is_polygon = any(kw in fl for kw in POLYGON_KEYWORDS)
+        if is_polygon:
+            current_polygon = first.strip()
 
-        if len(numeric) >= 2 and first and not any(kw in fl for kw in ['содержание','анализ','таблиц','страниц','справк','резерв','общий','эс5','вл1']):
-            # FIXED layout: План[всего=1 /груз=3]  Факт[всего=4 /груз=6]  +/-[всего=7 /груз=9].
-            # The report tracks ГРУЗОВОЕ движение → plan=[3], fact=[6], delta=[9].
-            road_name = first.strip()
-
-            def g(i):
-                v = row[i] if i < len(row) else None
-                return int(v) if isinstance(v, (int, float)) else None
-
-            plan, fact, delta = g(3), g(6), g(9)
-            if plan is not None or fact is not None:
-                records.append(dict(
-                    report_date=report_date,
-                    section=current_section,
-                    polygon=current_polygon,
-                    road=road_name,
-                    plan=int(plan) if plan is not None else None,
-                    fact=int(fact) if fact is not None else None,
-                    delta=int(delta) if delta is not None else None,
-                ))
+        road_name = first.strip()
+        for traction, b in BLOCKS:
+            plan_total  = g(b + 0)
+            plan_freight= g(b + 2)
+            fact_total  = g(b + 3)
+            fact_freight= g(b + 5)
+            delta_total = g(b + 6)
+            delta_freight = g(b + 8)
+            reserve     = g(b + 9)
+            # skip an empty traction block for this road
+            if plan_total is None and fact_total is None and plan_freight is None and fact_freight is None:
+                continue
+            records.append(dict(
+                report_date=report_date, section=traction,
+                polygon=current_polygon if not is_polygon else None,
+                road=road_name,
+                plan=plan_freight, fact=fact_freight, delta=delta_freight,  # back-compat (груз)
+                plan_total=plan_total, fact_total=fact_total, delta_total=delta_total,
+                reserve=reserve,
+            ))
     return records
 
 
@@ -304,46 +290,98 @@ def parse_locomotives(path, report_date):
 # 4. Припортовые станции
 # ---------------------------------------------------------------------------
 def parse_port_stations(path, report_date, road_code):
-    """Parse 'Справка о работе припортовых станций на X ж.д..xlsx'."""
-    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    ws = wb.active
-    rows = list(ws.iter_rows(values_only=True))
-    wb.close()
+    """Parse 'Справка о работе припортовых станций на X ж.д..xlsx'.
 
-    # FIXED column layout (0-based tuple indices), header occupies rows 0-3:
-    #   [0] station            [1] погрузка всего   [2] погрузка ср/сут
-    #   [3] вагоны норма        [4] вагоны факт      [5] отставл. поездов
-    #   [6] на дороге норма     [7] на дороге факт   [8] на дороге отставл.
-    #   [9] налич. на станции   [10] перераб. спос.  [11] ВЫГРУЗКА на 18:00
-    #   [12] выгрузка ср/сут    [13] налич. 06:00    [14] ...
+    CRITICAL: rows are a 5-level HIERARCHY encoded as cell INDENTATION in col A
+    (alignment.indent), which the data-only read discards. Without row_level the
+    agent cannot tell a road-subtotal (ДАЛЬНЕВОСТОЧНАЯ) from a real station
+    (Находка-Восточная) from a cargo line (Каменный уголь) — it double-counts and
+    lists road totals as stations. We read formatting + values and map indent:
+      1=network('ИТОГО ПО ПОРТАМ СЕТИ') 2=road 3=port(узел) 4=terminal 5=cargo.
+    """
+    # Two loads: data_only for VALUES, default for INDENT (openpyxl can't do both).
+    wb_v = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    rows = list(wb_v.active.iter_rows(values_only=True)); wb_v.close()
+    wb_f = openpyxl.load_workbook(path)  # formatting (indent) — not read_only
+    ws_f = wb_f.active
+    indents = {}
+    for i in range(1, ws_f.max_row + 1):
+        c = ws_f.cell(i, 1)
+        al = c.alignment
+        indents[i - 1] = int(al.indent) if al and al.indent else 0  # 0-based row key
+    wb_f.close()
+
+    # Absolute indent is NOT consistent across the 3 road files: the ДВОСТ file
+    # has an extra top "ИТОГО ПО ПОРТАМ СЕТИ" (network) row that shifts everything
+    # down by 1, while ОКТ/СКАВ start at the road itself. So map level RELATIVE to
+    # the file's minimum data indent, and pin network/road by NAME, not indent.
+    REL = {1: "port", 2: "terminal", 3: "cargo", 4: "cargo"}  # indent above the road row
+    # Full road names (UPPER) to recognise a road-subtotal row vs a station.
+    ROAD_NAMES_UP = {
+        "ОКТЯБРЬСКАЯ", "ДАЛЬНЕВОСТОЧНАЯ", "СЕВЕРО-КАВКАЗСКАЯ", "КАЛИНИНГРАДСКАЯ",
+        "МОСКОВСКАЯ", "ГОРЬКОВСКАЯ", "СЕВЕРНАЯ", "ЮГО-ВОСТОЧНАЯ", "ПРИВОЛЖСКАЯ",
+        "КУЙБЫШЕВСКАЯ", "СВЕРДЛОВСКАЯ", "ЮЖНО-УРАЛЬСКАЯ", "ЗАПАДНО-СИБИРСКАЯ",
+        "КРАСНОЯРСКАЯ", "ВОСТОЧНО-СИБИРСКАЯ", "ЗАБАЙКАЛЬСКАЯ",
+    }
+    # Find the indent of the ROAD row — ports/terminals/cargo are measured from it.
+    road_indent = None
+    for ri in range(4, len(rows)):
+        nm = rows[ri][0]
+        if nm and str(nm).strip().upper() in ROAD_NAMES_UP:
+            road_indent = indents.get(ri, 0); break
+    if road_indent is None:  # no explicit road row → ports sit at file's min indent - 1
+        di = [indents.get(ri, 0) for ri in range(4, len(rows)) if rows[ri][0]]
+        road_indent = (min(di) - 1) if di else 0
+
+    # FIXED column layout (0-based): [1]погр.всего [2]погр.ср/сут [3]вагоны норма
+    #   [4]вагоны факт [5]отставл [6]на дороге норма [7]факт [8]отставл.на дороге
+    #   [9]налич.станц 18:00 [10]ПЕРЕР.СПОС [11]ВЫГРУЗКА 18:00 [12]выгр.ср/сут
+    #   [13]налич.06:00 [14]... [15]план выгрузки 13.03
     records = []
-    for row in rows[4:]:
+    for ri, row in enumerate(rows[4:], start=4):
         station = _clean(row[0]) if len(row) > 0 and row[0] else None
         if not station or len(station) < 3:
             continue
-        # skip leftover header/label rows
         if any(w in station.lower() for w in ['справ', 'погруз', 'налич', 'норма', 'перер']):
             continue
 
         def g(i):
             return _num(row[i]) if i < len(row) and isinstance(row[i], (int, float)) else None
 
+        # Level: network/road pinned by name; deeper levels by indent above road row.
+        st_up = station.upper()
+        rel = indents.get(ri, road_indent) - road_indent
+        if "ИТОГО ПО ПОРТАМ" in st_up:
+            row_level = "network"
+        elif st_up in ROAD_NAMES_UP:
+            row_level = "road"
+        else:
+            row_level = REL.get(rel, "cargo" if rel >= 3 else "port")
+
         load_plan    = g(1)    # погрузка всего
-        load_fact    = g(11)   # ВЫГРУЗКА факт на 18:00
+        load_avg     = g(2)    # погрузка ср/сут
         capacity     = g(10)   # перерабатывающая способность
+        load_fact    = g(11)   # ВЫГРУЗКА факт на 18:00
+        unload_avg   = g(12)   # выгрузка ср/сут
         wagons_total = g(4)    # наличие вагонов факт
         wagons_road  = g(7)    # на дороге факт
-        detained     = g(5)    # отставленных поездов
+        detained     = g(5)    # отставленных поездов (станция)
+        detained_road= g(8)    # отставленных поездов (на дороге)
+        unload_plan_next = g(15)  # план выгрузки на 18:00 следующих суток
 
         if load_fact is None and capacity is None and wagons_total is None:
             continue
 
         records.append(dict(
             report_date=report_date, road=road_code, station=station,
+            row_level=row_level,
             load_plan=load_plan, load_fact=load_fact, capacity=capacity,
+            load_avg=load_avg, unload_avg=unload_avg,
             wagons_total=int(wagons_total) if wagons_total else None,
             wagons_road=int(wagons_road) if wagons_road else None,
             detained_trains=int(detained) if detained else None,
+            detained_trains_road=int(detained_road) if detained_road else None,
+            unload_plan_next=unload_plan_next,
         ))
     return records
 
@@ -376,16 +414,24 @@ def parse_speed_xlsb(path, report_date, speed_type):
                         continue
 
                     road = first.strip()
-                    # columns: prev_year, norm, day_fact, day_delta, month_fact, month_delta, year_delta
+                    # FIXED columns by index (cell.c). Main block 1-7 is gruzovoe
+                    # (what answers are based on). Section files ALSO carry two
+                    # sub-variants the old collapse-parser dropped:
+                    #   8-11  = «без передаточных и вывозных поездов»
+                    #   12-15 = «передаточные и вывозные поезда»
+                    # Technical files have only the 7-col block → extras stay None.
+                    cv = {c.c: _num(c.v) for c in row if isinstance(c.v, (int, float))}
+                    def col(i): return cv.get(i)
                     records.append(dict(
                         report_date=report_date, speed_type=speed_type, road=road,
-                        prev_year=numerics[0] if len(numerics) > 0 else None,
-                        norm=numerics[1] if len(numerics) > 1 else None,
-                        day_fact=numerics[2] if len(numerics) > 2 else None,
-                        day_delta=numerics[3] if len(numerics) > 3 else None,
-                        month_fact=numerics[4] if len(numerics) > 4 else None,
-                        month_delta=numerics[5] if len(numerics) > 5 else None,
-                        year_delta=numerics[6] if len(numerics) > 6 else None,
+                        prev_year=col(1), norm=col(2), day_fact=col(3), day_delta=col(4),
+                        month_fact=col(5), month_delta=col(6), year_delta=col(7),
+                        # sub-variant: без передаточных/вывозных
+                        nopass_prev_year=col(8), nopass_day_fact=col(9),
+                        nopass_month_fact=col(10), nopass_year_delta=col(11),
+                        # sub-variant: передаточные/вывозные
+                        pass_prev_year=col(12), pass_day_fact=col(13),
+                        pass_month_fact=col(14), pass_year_delta=col(15),
                     ))
     return records
 
@@ -423,34 +469,47 @@ def write_failures(conn, records):
 
 def write_locomotives(conn, records):
     sql = """INSERT INTO spravki_locomotives
-             (report_date,section,polygon,road,plan,fact,delta)
-             VALUES (%s,%s,%s,%s,%s,%s,%s)"""
+             (report_date,section,polygon,road,plan,fact,delta,
+              plan_total,fact_total,delta_total,reserve)
+             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     with conn.cursor() as cur:
         for r in records:
             cur.execute(sql, (r['report_date'],r['section'],r['polygon'],r['road'],
-                              r['plan'],r['fact'],r['delta']))
+                              r['plan'],r['fact'],r['delta'],
+                              r.get('plan_total'),r.get('fact_total'),
+                              r.get('delta_total'),r.get('reserve')))
 
 
 def write_port_stations(conn, records):
     sql = """INSERT INTO spravki_port_stations
-             (report_date,road,station,load_plan,load_fact,capacity,wagons_total,wagons_road,detained_trains)
-             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+             (report_date,road,station,row_level,load_plan,load_fact,capacity,
+              load_avg,unload_avg,wagons_total,wagons_road,detained_trains,
+              detained_trains_road,unload_plan_next)
+             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     with conn.cursor() as cur:
         for r in records:
-            cur.execute(sql, (r['report_date'],r['road'],r['station'],
-                              r['load_plan'],r['load_fact'],r['capacity'],r['wagons_total'],
-                              r['wagons_road'],r['detained_trains']))
+            cur.execute(sql, (r['report_date'],r['road'],r['station'],r.get('row_level'),
+                              r['load_plan'],r['load_fact'],r['capacity'],
+                              r.get('load_avg'),r.get('unload_avg'),r['wagons_total'],
+                              r['wagons_road'],r['detained_trains'],
+                              r.get('detained_trains_road'),r.get('unload_plan_next')))
 
 
 def write_speed(conn, records):
     sql = """INSERT INTO spravki_speed
-             (report_date,speed_type,road,prev_year,norm,day_fact,day_delta,month_fact,month_delta,year_delta)
-             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+             (report_date,speed_type,road,prev_year,norm,day_fact,day_delta,month_fact,month_delta,year_delta,
+              nopass_prev_year,nopass_day_fact,nopass_month_fact,nopass_year_delta,
+              pass_prev_year,pass_day_fact,pass_month_fact,pass_year_delta)
+             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     with conn.cursor() as cur:
         for r in records:
             cur.execute(sql, (r['report_date'],r['speed_type'],r['road'],
                               r['prev_year'],r['norm'],r['day_fact'],r['day_delta'],
-                              r['month_fact'],r['month_delta'],r['year_delta']))
+                              r['month_fact'],r['month_delta'],r['year_delta'],
+                              r.get('nopass_prev_year'),r.get('nopass_day_fact'),
+                              r.get('nopass_month_fact'),r.get('nopass_year_delta'),
+                              r.get('pass_prev_year'),r.get('pass_day_fact'),
+                              r.get('pass_month_fact'),r.get('pass_year_delta')))
 
 
 # ---------------------------------------------------------------------------

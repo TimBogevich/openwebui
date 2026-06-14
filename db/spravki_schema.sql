@@ -78,17 +78,28 @@ COMMENT ON TABLE spravki_failures IS
 CREATE TABLE IF NOT EXISTS spravki_locomotives (
     id            serial PRIMARY KEY,
     report_date   date NOT NULL,
-    section       varchar(100),   -- 'AC' (переменный ток), 'DC' (постоянный), 'diesel'
+    section       varchar(100),   -- тип тяги: 'AC' (переменный ток), 'DC' (постоянный), 'diesel' (тепловозы)
     polygon       varchar(100),   -- 'Юго-Западный', 'Северо-Западный', 'Восточный', etc
     road          varchar(50),    -- дорога в составе полигона
-    plan          int,
-    fact          int,
-    delta         int
+    plan          int,            -- план в ГРУЗОВОМ движении
+    fact          int,            -- факт в грузовом движении
+    delta         int,            -- +/- грузовое
+    plan_total    int,            -- план ВЕСЬ эксплуатируемый парк
+    fact_total    int,            -- факт весь парк
+    delta_total   int,            -- +/- весь парк
+    reserve       int             -- Резерв
 );
 CREATE INDEX IF NOT EXISTS idx_loco_date ON spravki_locomotives (report_date);
+ALTER TABLE spravki_locomotives ADD COLUMN IF NOT EXISTS plan_total int;
+ALTER TABLE spravki_locomotives ADD COLUMN IF NOT EXISTS fact_total int;
+ALTER TABLE spravki_locomotives ADD COLUMN IF NOT EXISTS delta_total int;
+ALTER TABLE spravki_locomotives ADD COLUMN IF NOT EXISTS reserve int;
 COMMENT ON TABLE spravki_locomotives IS
-  'Эксплуатируемый парк локомотивов по полигонам и типам тяги. '
-  'Источник справок к ГЦУ. Связывается с metrics по report_date.';
+  'Эксплуатируемый парк локомотивов по полигонам/дорогам и ТИПАМ ТЯГИ (section: '
+  'AC=переменный ток, DC=постоянный, diesel=тепловозы). plan/fact/delta — ГРУЗОВОЕ '
+  'движение; plan_total/fact_total — ВЕСЬ эксплуатируемый парк; reserve — Резерв. '
+  'Каждая дорога имеет до 3 строк (по одному на тип тяги). Источник справок к ГЦУ '
+  '(АРМ ОНД). Связывается с metrics по report_date.';
 
 -- ---------------------------------------------------------------------------
 -- spravki_port_stations — Работа припортовых станций
@@ -100,16 +111,26 @@ CREATE TABLE IF NOT EXISTS spravki_port_stations (
     report_date   date NOT NULL,
     road          varchar(20),     -- 'ДВОСТ','ОКТ','СКАВ'
     station       varchar(200),
-    load_plan     numeric(10,1),   -- погрузка норма (ср/сут)
+    row_level     varchar(10),     -- ИЕРАРХИЯ: network/road/port/terminal/cargo (из отступа)
+    load_plan     numeric(10,1),   -- погрузка всего
     load_fact     numeric(10,1),   -- ВЫГРУЗКА факт на 18:00
     capacity      numeric(10,1),   -- перерабатывающая способность (норма выгрузки)
+    load_avg      numeric(10,1),   -- погрузка ср/сут
+    unload_avg    numeric(10,1),   -- выгрузка ср/сут
     wagons_total  int,             -- наличие вагонов всего
     wagons_road   int,             -- на дороге
-    detained_trains int            -- отставленных поездов
+    detained_trains int,           -- отставленных поездов (станция)
+    detained_trains_road int,      -- отставленных поездов (на дороге)
+    unload_plan_next numeric(10,1) -- план выгрузки на следующие сутки
 );
 CREATE INDEX IF NOT EXISTS idx_ports_date ON spravki_port_stations (report_date);
 -- additive migration for existing DBs (no-op if column already present)
 ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS capacity numeric(10,1);
+ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS row_level varchar(10);
+ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS load_avg numeric(10,1);
+ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS unload_avg numeric(10,1);
+ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS detained_trains_road int;
+ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS unload_plan_next numeric(10,1);
 COMMENT ON TABLE spravki_port_stations IS
   'Работа припортовых станций: ВЫГРУЗКА факт (load_fact) против перерабатывающей способности (capacity), '
   'наличие вагонов, отставленные поезда — для вопросов об использовании перерабатывающей способности портов. '
@@ -134,9 +155,27 @@ CREATE TABLE IF NOT EXISTS spravki_speed (
     day_delta     numeric(5,1),        -- +/- к норме за сутки
     month_fact    numeric(5,1),
     month_delta   numeric(5,1),        -- +/- к норме нарастающим
-    year_delta    numeric(5,1)         -- +/- к прошлому году
+    year_delta    numeric(5,1),        -- +/- к прошлому году
+    -- участковая БЕЗ передаточных/вывозных поездов (только section):
+    nopass_prev_year numeric(5,1),
+    nopass_day_fact  numeric(5,1),
+    nopass_month_fact numeric(5,1),
+    nopass_year_delta numeric(5,1),
+    -- участковая передаточных/вывозных поездов (только section):
+    pass_prev_year   numeric(5,1),
+    pass_day_fact    numeric(5,1),
+    pass_month_fact  numeric(5,1),
+    pass_year_delta  numeric(5,1)
 );
 CREATE INDEX IF NOT EXISTS idx_speed_date_type ON spravki_speed (report_date, speed_type);
+ALTER TABLE spravki_speed ADD COLUMN IF NOT EXISTS nopass_prev_year numeric(5,1);
+ALTER TABLE spravki_speed ADD COLUMN IF NOT EXISTS nopass_day_fact numeric(5,1);
+ALTER TABLE spravki_speed ADD COLUMN IF NOT EXISTS nopass_month_fact numeric(5,1);
+ALTER TABLE spravki_speed ADD COLUMN IF NOT EXISTS nopass_year_delta numeric(5,1);
+ALTER TABLE spravki_speed ADD COLUMN IF NOT EXISTS pass_prev_year numeric(5,1);
+ALTER TABLE spravki_speed ADD COLUMN IF NOT EXISTS pass_day_fact numeric(5,1);
+ALTER TABLE spravki_speed ADD COLUMN IF NOT EXISTS pass_month_fact numeric(5,1);
+ALTER TABLE spravki_speed ADD COLUMN IF NOT EXISTS pass_year_delta numeric(5,1);
 COMMENT ON TABLE spravki_speed IS
   'Участковая и техническая скорость по дорогам России. '
   'speed_type: section=участковая, technical=техническая. '
