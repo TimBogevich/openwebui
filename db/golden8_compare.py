@@ -85,13 +85,19 @@ for qi,it in enumerate(ITEMS,1):
 # ---------- HTML report ----------
 def esc(s): return html.escape(s or "")
 ans=sum(1 for r in results if r["answer"])
+import re as _re
 cards=[]
 for i,r in enumerate(results,1):
-    cited = bool(r["answer"]) and 'источник' in (r["answer"] or '').lower()
-    redz  = bool(r["answer"]) and 'красн' in (r["answer"] or '').lower()
+    ans=r["answer"] or ""
+    cited = 'источник' in ans.lower()
+    redz  = 'красн' in ans.lower()
+    emoji = _re.findall(r'[\U0001F300-\U0001FAFF☀-➿]', ans)
+    tbls  = [t for t in ['spravki_','load_fact','row_level','day_fact','delay_code','month_fact','road_codes','delay_reason_codes'] if t in ans]
     chips=[]
-    if cited: chips.append('<span class="chip ok">ссылка на источник</span>')
-    if redz:  chips.append('<span class="chip ok">красная зона</span>')
+    if cited: chips.append('<span class="chip ok">источник ✓</span>')
+    if redz:  chips.append('<span class="chip ok">зона словом ✓</span>')
+    chips.append('<span class="chip %s">эмодзи: %s</span>'%(('bad' if emoji else 'ok'), (''.join(emoji[:5]) if emoji else 'нет ✓')))
+    chips.append('<span class="chip %s">имена таблиц: %s</span>'%(('bad' if tbls else 'ok'), (', '.join(tbls) if tbls else 'нет ✓')))
     tools=" → ".join(r["calls"])
     cards.append(
      '<div class="card"><div class="qh">Вопрос %d</div><div class="q">%s</div>'
@@ -109,6 +115,7 @@ CSS=("body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;margin:0;backgro
  ".qh{font-size:12px;color:#c8102e;font-weight:700}.q{font-weight:600;margin:3px 0 8px;font-size:15px}"
  ".meta{font-size:12px;color:#777;margin-bottom:10px}.chip{font-size:11px;padding:2px 8px;border-radius:20px;margin-left:6px}"
  ".chip.ok{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}"
+ ".chip.bad{background:#ffebee;color:#b71c1c;border:1px solid #ef9a9a}"
  ".cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:900px){.cols{grid-template-columns:1fr}}"
  ".col{background:#fafafa;border-radius:8px;padding:10px;border:1px solid #eee}"
  ".lbl{font-size:11px;font-weight:700;margin-bottom:6px;padding:2px 6px;border-radius:4px;display:inline-block}"
