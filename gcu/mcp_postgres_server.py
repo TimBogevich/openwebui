@@ -284,7 +284,7 @@ def describe(table: str = "") -> str:
                             # (no imperatives/prohibitions): the subtotal/grand-total
                             # double-count and the км/ч-vs-п.п. mislabel resolve from
                             # the stated structure, not a command.
-                            out.append("  Итог по сети — готовая строка-итог (road_code='СЕТЬ', row_level='network', 'Итого по сети') и вьюхи v_delays_total, v_ports_network; детальные строки и строки-итоги — разные уровни.")
+                            out.append("  В таблицах-справках spravki_* итог по сети — готовая строка-итог (road_code='СЕТЬ', row_level='network', 'Итого по сети') и вьюхи v_delays_total, v_ports_network; детальные строки и строки-итоги — разные уровни. В metrics этих столбцов нет: итог по сети там — строка road IS NULL.")
                             out.append("  Скорость (spravki_speed) измеряется в км/ч; отклонения по скорости — в км/ч.")
                             for st in spr_tables:
                                 try:
@@ -396,11 +396,12 @@ def query(sql: str) -> str:
     # Catches the name-fishing loop where each rewrite has a different hash.
     if _consec_zero[0] >= _ZERO_BLOCK_AT:
         _consec_zero[0] = 0   # reset so user can resume after the warning
-        return ("⛔ СТОП: последние запросы возвращали 0 строк подряд. "
-                "Это означает, что искомого показателя НЕТ в текущей таблице — "
-                "ПЕРЕСТАНЬ перебирать формулировки. Дай честный ответ: "
-                "«искомый показатель в БД не найден» и предложи ближайшие "
-                "по смыслу из уже виденных результатов.")
+        return ("⛔ СТОП: последние запросы вернули 0 строк подряд. "
+                "Скорее всего, такого РАЗРЕЗА нет (например, разбивки по дорогам у "
+                "этого показателя), а не самого показателя. Если основные данные уже "
+                "получены ранее — формулируй ОТВЕТ по ним и укажи, что детализация "
+                "отсутствует. Если данных ещё нет — уточни запрос, а не перебирай "
+                "формулировки.")
 
     result, err = _run_select(sql)
     if err:
@@ -508,7 +509,7 @@ def find_indicator(query: str, k: int = 5) -> str:
     out = [f"Топ-{len(rows)} кандидатов (по семантическому сходству):"]
     out.append("")
     for name, inum, section, unit, n_occ, has_road, sim in rows:
-        road_tag = " [есть разбивка по дорогам]" if has_road else ""
+        road_tag = " [есть разбивка по дорогам]" if has_road else " [только итог по сети, разреза по дорогам нет]"
         out.append(f"  sim={sim:.3f}  inum={inum}  раздел={section}  ед={unit}{road_tag}")
         out.append(f"    name = «{name}»")
     out.append("")
