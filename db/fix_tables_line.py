@@ -16,7 +16,7 @@ import sqlite3, json, re, time
 DB = "/app/backend/data/webui.db"
 PAT = re.compile(r"Доступные таблицы:[^\n]*")
 REPL = ("Полный список таблиц и их колонки узнавай через describe — "
-        "не полагайся на память о составе базы (есть и таблицы-справки spravki_*).")
+        "не полагайся на память о составе базы (есть и таблицы-справки).")
 
 db = sqlite3.connect(DB)
 now = int(time.time())

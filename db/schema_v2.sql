@@ -168,13 +168,16 @@ CREATE INDEX IF NOT EXISTS idx_comments_text_search
 -- ---------------------------------------------------------------------------
 -- Column-level documentation surfaced by describe()
 -- ---------------------------------------------------------------------------
-COMMENT ON TABLE  reports             IS 'Daily ГЦУ report (one per xlsx). baseline_year = year the *_to_prev_year columns compare to.';
-COMMENT ON TABLE  metrics             IS 'Operational indicators (Доклад Ц ЦЗ + Срок доставки). All numbers in typed columns.';
-COMMENT ON TABLE  investment_metrics  IS 'Инвестиционная программа (Инвест + Инвест Факт sheets). 10 typed columns: expenses + funds × {approved/period_plan/fact/pct_period/pct_year}.';
-COMMENT ON TABLE  report_comments     IS 'Textual commentary and management actions, separated from metrics (one indicator may have multiple).';
-COMMENT ON COLUMN metrics.zone        IS '0=green/norm, 1=yellow, 2=red(critical), 4=special/informational';
-COMMENT ON COLUMN metrics.day_to_plan IS 'Deviation from plan. If unit=''%'' the value is already in percentage points (e.g. 0.335 = +0.335 п.п.). Otherwise it is a fraction (-0.0979 = -9.79%).';
-COMMENT ON COLUMN metrics.road        IS 'Railway name for per-road breakdown rows; NULL for non-road rows.';
-COMMENT ON COLUMN metrics.populates   IS 'Which period the indicator actually populates: daily / monthly / yearly / mixed / none.';
-COMMENT ON COLUMN metrics.parent_indicator IS 'Immediate parent indicator_number in the tree (e.g. ''7.7.3.3'' for ''7.7.3.3.1'').';
-COMMENT ON COLUMN reports.baseline_year IS 'Year for *_to_prev_year deviations. March 2022 → 2021; April 2026 → 2025.';
+-- NOTE: full Russian column/table comments live in db/metrics_comments.sql
+-- (single source of truth, surfaced by describe()). The lines below are kept in
+-- sync so a fresh schema apply doesn't reintroduce English.
+COMMENT ON TABLE  reports             IS 'Ежедневный доклад ЦГЦУ (одна строка на xlsx-файл). baseline_year — год сравнения для столбцов отклонения к прошлому году.';
+COMMENT ON TABLE  metrics             IS 'Оперативные показатели докладов ЦГЦУ (листы «Доклад Ц ЦЗ» и «Срок доставки»). Все числа в типизированных колонках. report_date — в таблице reports, связь по report_id.';
+COMMENT ON TABLE  investment_metrics  IS 'Инвестиционная программа (листы «Инвест» и «Инвест Факт»). 10 типизированных колонок: расходы и ввод фондов × {утв./план периода/факт/% к периоду/% к году}.';
+COMMENT ON TABLE  report_comments     IS 'Текстовые комментарии и управленческие действия, отдельно от metrics (у одного показателя может быть несколько).';
+COMMENT ON COLUMN metrics.zone        IS 'Зона риска показателя: 0 = зелёная (норма), 1 = жёлтая, 2 = красная (критическая), 4 = особая (информационная).';
+COMMENT ON COLUMN metrics.day_to_plan IS 'Отклонение факта за сутки от плана. При unit=''%'' значение уже в процентных пунктах (0,335 = +0,335 п.п.); иначе это доля (-0,0979 = -9,79%).';
+COMMENT ON COLUMN metrics.road        IS 'Название дороги для строк разбивки по дорогам; пусто для строк не по дорогам.';
+COMMENT ON COLUMN metrics.populates   IS 'Период, который реально заполнен у показателя: суточный / месячный / годовой / смешанный / нет.';
+COMMENT ON COLUMN metrics.parent_indicator IS 'Номер родительского показателя в дереве (например ''7.7.3.3'' для ''7.7.3.3.1'').';
+COMMENT ON COLUMN reports.baseline_year IS 'Год сравнения для отклонений к прошлому году: март 2022 → 2021; апрель 2026 → 2025.';

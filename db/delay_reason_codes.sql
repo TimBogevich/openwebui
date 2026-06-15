@@ -14,8 +14,10 @@ CREATE TABLE IF NOT EXISTS delay_reason_codes (
     violation       text,              -- нарушение по методике (Раздел III)
     responsibility  text NOT NULL,      -- категория ответственности
     units           text NOT NULL,      -- подразделения-нарушители (через запятую)
-    source          text NOT NULL       -- 'методика №2040/р' | 'оценка по аналогии'
+    source          text NOT NULL,      -- 'методика №2040/р' | 'оценка по аналогии'
+    note            text                -- нейтральное пояснение (напр. код 5 — платная услуга)
 );
+ALTER TABLE delay_reason_codes ADD COLUMN IF NOT EXISTS note text;
 TRUNCATE delay_reason_codes;
 -- 8 кодов — ПРЯМО из маппинга методики №2040/р (delay_causes_results.json):
 INSERT INTO delay_reason_codes (delay_code, reason_name, violation, responsibility, units, source) VALUES
@@ -68,3 +70,11 @@ COMMENT ON TABLE delay_reason_codes IS
   'spravki_delays.delay_code = delay_reason_codes.delay_code. Источник: методика №2040/р '
   '(8 кодов — прямо из методики; 4 кода помечены в колонке source как «оценка по аналогии» — '
   'указывай это в ответе).';
+
+-- note: нейтральные пояснения (15.06.2026 — из разбора с технологом РЖД).
+UPDATE delay_reason_codes SET note =
+  'Платная услуга по договору о временном размещении подвижного состава; при корректном оформлении документов на нарушение срока доставки не влияет.'
+  WHERE delay_code = '5';
+UPDATE delay_reason_codes SET note =
+  'Учитывается как одна из причин нарушения срока доставки (методика №2040/р).'
+  WHERE delay_code IN ('1','2','21','22','24','43','44') AND note IS NULL;

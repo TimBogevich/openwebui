@@ -32,3 +32,6 @@ gcu/*.bak.*
 ~$*
 backups/
 scripts/*.log
+
+# Cross-container test staging (scratch)
+_test_stage/

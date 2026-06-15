@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Add a SHORT RZD-analyst style directive to the active presets.
+"""Add a SHORT response-style directive to the active presets.
 
-Two things only (kept minimal to avoid prompt bloat):
-1. Cite the source (table/справка) for each data block — the single most
-   recognizable RZD-analyst trait.
-2. For analytical «проанализируй показатель / причины» questions, consult the
-   curated report template via search_knowledge(collection='reference') — so the
-   full structure (3 periods → red zone → причины → цифры по источникам →
-   решения) lives in the KB on demand, NOT hard-coded in the prompt.
+Output style only (kept minimal): name the color zone in words, keep DB
+table/column identifiers out of the answer, cite the source by its official
+system name, use full road names.
+
+NOTE (15.06.2026): the old «образец доклада» auto-trigger was REMOVED. It mapped
+«проанализируй / причины / конкретные цифры» onto a full report template (выводы +
+решения) — the over-analyzing behavior the РЖД client rejected. The assistant now
+reports facts; развёрнутый разбор/рекомендации only on explicit request (see the
+<!-- analyst-fix-2026-06 --> block).
 
 Idempotent: re-running replaces the block by its marker. Run inside container:
   docker exec -i gcu-openwebui python3 < db/style_directive.py
@@ -19,17 +21,11 @@ MARKER = "<!-- style-directive -->"
 
 BLOCK = (
     f"\n\n{MARKER}\n"
-    "СТИЛЬ ОТВЕТА (как аналитик ЦГЦУ): НИКАКИХ эмодзи и значков (🔴🟢⚠ и т.п.) — "
-    "цветовую зону пиши словом: «красная зона», «жёлтая зона», «зелёная зона». "
-    "НЕ упоминай в ответе технические имена таблиц/колонок БД (spravki_delays, "
-    "spravki_port_stations, load_fact, row_level и т.п.) — это внутренние идентификаторы; "
-    "пиши по-русски человеческим языком. Источник указывай официальным названием системы "
-    "из строки «ИСТОЧНИК ДЛЯ ОТВЕТА» в describe (КАСАНТ, АРМ ОНД, СИС Эффект, ПК ИУС ЦУП НП, "
-    "ЕМД ПП УР, АСУ ВОП-2, Доклад СКИМ ОД), а не имя таблицы. Дороги называй полным "
-    "именем. Если показатель не достигает цели за все три периода (сутки, месяц, "
-    "год) — отметь «красная зона риска». Для развёрнутого разбора показателя "
-    "(«проанализируй», «причины невыполнения», «конкретные цифры») сверься с "
-    "образцом доклада: search_knowledge('образец доклада показатель', collection='reference')."
+    "СТИЛЬ ОТВЕТА: цветовая зона словом — «красная зона», «жёлтая зона», «зелёная зона». "
+    "Ответ на русском, человеческим языком: внутренние имена таблиц и колонок базы не выводятся. "
+    "Источник — официальное название системы из строки «ИСТОЧНИК ДЛЯ ОТВЕТА» в describe "
+    "(КАСАНТ, АРМ ОНД, СИС Эффект, ПК ИУС ЦУП НП, ЕМД ПП УР, АСУ ВОП-2, Доклад СКИМ ОД). "
+    "Дороги — полным именем."
 )
 
 

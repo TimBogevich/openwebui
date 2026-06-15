@@ -280,6 +280,12 @@ def describe(table: str = "") -> str:
                         if spr_tables:
                             out.append("")
                             out.append("Связанные таблицы-источники (детализация по report_date):")
+                            # Counting + unit context — neutral declarative facts
+                            # (no imperatives/prohibitions): the subtotal/grand-total
+                            # double-count and the км/ч-vs-п.п. mislabel resolve from
+                            # the stated structure, not a command.
+                            out.append("  Итог по сети — готовая строка-итог (road_code='СЕТЬ', row_level='network', 'Итого по сети') и вьюхи v_delays_total, v_ports_network; детальные строки и строки-итоги — разные уровни.")
+                            out.append("  Скорость (spravki_speed) измеряется в км/ч; отклонения по скорости — в км/ч.")
                             for st in spr_tables:
                                 try:
                                     # Coverage window — live, no hardcoding.
