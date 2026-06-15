@@ -84,7 +84,7 @@ for qi,it in enumerate(ITEMS,1):
 
 # ---------- HTML report ----------
 def esc(s): return html.escape(s or "")
-ans=sum(1 for r in results if r["answer"])
+n_answered=sum(1 for r in results if r["answer"])
 import re as _re
 cards=[]
 for i,r in enumerate(results,1):
@@ -125,6 +125,6 @@ CSS=("body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;margin:0;backgro
 doc=('<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Сравнение: 8 эталонных вопросов</title>'
  '<style>%s</style></head><body><header><h1>ЦГЦУ — сравнение ответов модели с эталоном (8 вопросов)</h1>'
  '<div class="sub">%s · ответили %d/8 · %s</div></header><div class="wrap">%s</div></body></html>'
- %(CSS,esc(MODEL),ans,time.strftime("%Y-%m-%d %H:%M"),"".join(cards)))
+ %(CSS,esc(MODEL),n_answered,time.strftime("%Y-%m-%d %H:%M"),"".join(cards)))
 open("/tmp/golden8_report.html","w",encoding="utf-8").write(doc)
-print("\n=== %d/8 answered. report: /tmp/golden8_report.html ==="%ans)
+print("\n=== %d/8 answered. report: /tmp/golden8_report.html ==="%n_answered)
