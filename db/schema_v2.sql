@@ -172,7 +172,7 @@ CREATE INDEX IF NOT EXISTS idx_comments_text_search
 -- (single source of truth, surfaced by describe()). The lines below are kept in
 -- sync so a fresh schema apply doesn't reintroduce English.
 COMMENT ON TABLE  reports             IS 'Ежедневный доклад ЦГЦУ (одна строка на xlsx-файл). baseline_year — год сравнения для столбцов отклонения к прошлому году.';
-COMMENT ON TABLE  metrics             IS 'Оперативные показатели докладов ЦГЦУ (листы «Доклад Ц ЦЗ» и «Срок доставки»). Все числа в типизированных колонках. report_date — в таблице reports, связь по report_id.';
+COMMENT ON TABLE  metrics             IS 'Оперативные показатели докладов ЦГЦУ (листы «Доклад Ц ЦЗ» и «Срок доставки»). Все числа в типизированных колонках. report_date — в таблице reports, связь по report_id. ИСТОЧНИК ДЛЯ ОТВЕТА: Доклад СКИМ ОД (для показателей листа «Срок доставки» — вкладка «Срок доставки»).';
 COMMENT ON TABLE  investment_metrics  IS 'Инвестиционная программа (листы «Инвест» и «Инвест Факт»). 10 типизированных колонок: расходы и ввод фондов × {утв./план периода/факт/% к периоду/% к году}.';
 COMMENT ON TABLE  report_comments     IS 'Текстовые комментарии и управленческие действия, отдельно от metrics (у одного показателя может быть несколько).';
 COMMENT ON COLUMN metrics.zone        IS 'Зона риска показателя: 0 = зелёная (норма), 1 = жёлтая, 2 = красная (критическая), 4 = особая (информационная).';
