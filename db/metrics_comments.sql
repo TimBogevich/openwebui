@@ -5,8 +5,16 @@
 -- Neutral declarative facts only — no imperatives, no evaluation. Idempotent.
 -- Apply: docker exec -i gcu-postgres psql -U postgres -d postgres < db/metrics_comments.sql
 
+-- Generated column zone_label — decoded zone word (idempotent for existing DBs;
+-- fresh builds get it inline from schema_v2.sql). Lets the model read «красная»
+-- instead of mapping the integer 2 (which it once misread as «жёлтая»).
+ALTER TABLE metrics ADD COLUMN IF NOT EXISTS zone_label text
+  GENERATED ALWAYS AS (CASE zone WHEN 0 THEN 'зелёная' WHEN 1 THEN 'жёлтая' WHEN 2 THEN 'красная' WHEN 4 THEN 'особая' END) STORED;
+
 -- Zone code -> color word. Unambiguous Russian mapping (был источник ошибки «жёлтая» вместо «красная»).
-COMMENT ON COLUMN metrics.zone IS 'Зона риска показателя: 0 = зелёная (норма), 1 = жёлтая, 2 = красная (критическая), 4 = особая (информационная).';
+-- В ответе используй готовое слово из zone_label, а не числовой код.
+COMMENT ON COLUMN metrics.zone IS 'Числовой код зоны риска: 0 = зелёная (норма), 1 = жёлтая, 2 = красная (критическая), 4 = особая (информационная). В ответе бери готовое слово из колонки zone_label.';
+COMMENT ON COLUMN metrics.zone_label IS 'Зона риска словом (готовый текст): зелёная / жёлтая / красная / особая. Используй это значение в ответе, чтобы не путать числовой код zone.';
 
 -- Deviation columns: the fraction-vs-п.п. convention (critical for correct % reporting).
 COMMENT ON COLUMN metrics.day_to_plan IS 'Отклонение факта за сутки от плана. При unit=''%'' значение уже в процентных пунктах (0,335 = +0,335 п.п.); иначе это доля (-0,0979 = -9,79%).';

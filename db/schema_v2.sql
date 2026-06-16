@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS metrics (
     unit                varchar(64),
     responsible         varchar(64),              -- ЦД, ЦТ, ЦФТО…
     zone                int2 DEFAULT 0,           -- 0=green, 1=yellow, 2=red, 4=special
+    -- Decoded zone word so the model reads «красная» instead of mapping the int 2.
+    zone_label          text GENERATED ALWAYS AS (CASE zone WHEN 0 THEN 'зелёная' WHEN 1 THEN 'жёлтая' WHEN 2 THEN 'красная' WHEN 4 THEN 'особая' END) STORED,
     -- Typed numeric values. Deviations are stored as FRACTIONS (-0.0979 = -9.79%).
     day_fact            float8,
     day_to_plan         float8,
