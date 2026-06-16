@@ -14,8 +14,8 @@
 COMMENT ON COLUMN spravki_delays.delay_code IS 'Код причины задержки. Значение ''ВСЕГО'' — строка-итог по дороге или по сети; числовые коды (1, 5, 2, 43, 22 …) — отдельные причины.';
 COMMENT ON COLUMN spravki_delays.delay_name IS 'Расшифровка причины задержки (текст).';
 COMMENT ON COLUMN spravki_delays.road_code IS 'Код дороги. Значение ''СЕТЬ'' — строка-итог по всей сети (готовая сумма); прочие коды (ОКТ, ДВС, СКВ …) — отдельные дороги, полное имя в road_codes.';
-COMMENT ON COLUMN spravki_delays.trains IS 'Задержано (отставлено) поездов в данной строке.';
-COMMENT ON COLUMN spravki_delays.wagons IS 'Вагонов в задержанных поездах в данной строке.';
+COMMENT ON COLUMN spravki_delays.trains IS 'Задержано (отставлено) поездов в данной строке. Итог по сети — из строки road_code=''СЕТЬ'',delay_code=''ВСЕГО'' (вьюха v_delays_total), а не суммой детальных строк вручную (риск арифметической ошибки).';
+COMMENT ON COLUMN spravki_delays.wagons IS 'Вагонов в задержанных поездах в данной строке. Итог по сети — из строки road_code=''СЕТЬ'',delay_code=''ВСЕГО'' (вьюха v_delays_total).';
 
 -- ===================== spravki_failures =====================
 -- Отказы техсредств 1-2 кат. Внимание: таблица содержит ДВЕ секции по dept:
