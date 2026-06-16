@@ -12,7 +12,7 @@ CREATE OR REPLACE VIEW v_delays_total AS
 SELECT report_date, trains, wagons
 FROM spravki_delays
 WHERE road_code = 'СЕТЬ' AND delay_code = 'ВСЕГО';
-COMMENT ON VIEW v_delays_total IS 'Готовый ИТОГ по сети по отставленным (задержанным) поездам: поездов (trains) и вагонов (wagons) за дату — одна строка на дату для вопроса «сколько всего задержано/отставлено по сети».';
+COMMENT ON VIEW v_delays_total IS 'Готовый ИТОГ по сети по отставленным (задержанным) поездам: поездов (trains) и вагонов (wagons) за дату — одна строка на дату для вопроса «сколько всего задержано/отставлено по сети». Сумму детальных строк по кодам вычислять вручную не нужно — готовый итог здесь.';
 
 -- Network total for port stations. Verified 12.03.2026: detained_trains = 266.
 CREATE OR REPLACE VIEW v_ports_network AS
