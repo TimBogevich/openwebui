@@ -75,8 +75,8 @@ COMMENT ON COLUMN spravki_speed.pass_year_delta IS 'Пасс.: отклонен�
 
 -- ===================== spravki_locomotives =====================
 COMMENT ON COLUMN spravki_locomotives.section IS 'Тип тяги: AC=переменный ток, DC=постоянный ток, diesel=тепловозы.';
-COMMENT ON COLUMN spravki_locomotives.polygon IS 'Тяговый полигон.';
-COMMENT ON COLUMN spravki_locomotives.road IS 'Дорога/направление.';
+COMMENT ON COLUMN spravki_locomotives.polygon IS 'Тяговый полигон, к которому относится строка-дорога. NULL означает, что сама строка является итогом по полигону (поле road в такой строке = название полигона: Восточный, Северо-Западный, Юго-Западный, Московский, Октябрьский). Не-NULL означает, что строка — отдельная дорога ВНУТРИ указанного полигона.';
+COMMENT ON COLUMN spravki_locomotives.road IS 'В строках polygon IS NULL — название тягового полигона (Восточный, Северо-Западный, …) — это уровень итога. В строках polygon=non-NULL — код дороги внутри полигона (В-СИБ, ДВОСТ, ЗАБ, КРАС, ОКТ, СЕВ, …); расшифровка через JOIN road_codes. Итоги по полигону и детальные строки дорог под ним — разные уровни, складывать их вместе нельзя.';
 COMMENT ON COLUMN spravki_locomotives.plan IS 'План эксплуатируемого парка локомотивов (по типу тяги).';
 COMMENT ON COLUMN spravki_locomotives.fact IS 'Факт эксплуатируемого парка (по типу тяги).';
 COMMENT ON COLUMN spravki_locomotives.delta IS 'Отклонение факт−план (по типу тяги), локомотивов.';
