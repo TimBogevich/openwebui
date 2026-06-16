@@ -14,7 +14,7 @@ ALTER TABLE metrics ADD COLUMN IF NOT EXISTS zone_label text
 -- Zone code -> color word. Unambiguous Russian mapping (был источник ошибки «жёлтая» вместо «красная»).
 -- В ответе используй готовое слово из zone_label, а не числовой код.
 COMMENT ON COLUMN metrics.zone IS 'Числовой код зоны риска: 0 = зелёная (норма), 1 = жёлтая, 2 = красная (критическая), 4 = особая (информационная). В ответе бери готовое слово из колонки zone_label.';
-COMMENT ON COLUMN metrics.zone_label IS 'Зона риска словом (готовый текст): зелёная / жёлтая / красная / особая. Используй это значение в ответе, чтобы не путать числовой код zone.';
+COMMENT ON COLUMN metrics.zone_label IS 'Зона риска словом (готовый текст): зелёная / жёлтая / красная / особая. В ответе бери ЭТО значение. Для фильтра по риску используй числовой код zone: zone=2 — красная (критическая), zone=1 — жёлтая, zone IN (1,2) — проблемные.';
 
 -- Deviation columns: the fraction-vs-п.п. convention (critical for correct % reporting).
 COMMENT ON COLUMN metrics.day_to_plan IS 'Отклонение факта за сутки от плана. При unit=''%'' значение уже в процентных пунктах (0,335 = +0,335 п.п.); иначе это доля (-0,0979 = -9,79%).';

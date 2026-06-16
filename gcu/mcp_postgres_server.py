@@ -309,7 +309,14 @@ def describe(table: str = "") -> str:
                         conn.rollback()
                 out.append("")
                 out.append("КОЛОНКИ (тип — комментарий):")
+                # Hide the raw numeric `zone` from metrics' column list: the model kept
+                # SELECTing the int and mis-mapping 2 -> «жёлтая». It now sees only the
+                # decoded `zone_label` (text «красная»). Filtering by code still works:
+                # the WHERE-hint below documents zone IN (1,2) for red/yellow filters.
+                _hide_cols = {"zone"} if tbl == "metrics" else set()
                 for name, dtype, comment in cols:
+                    if name in _hide_cols:
+                        continue
                     out.append(f"  • {name} ({dtype})" + (f" — {comment}" if comment else ""))
 
                 # 2) per-column profile — only for columns the model actually needs to
