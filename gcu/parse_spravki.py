@@ -358,7 +358,7 @@ def parse_port_stations(path, report_date, road_code):
         else:
             row_level = REL.get(rel, "cargo" if rel >= 3 else "port")
 
-        load_plan    = g(1)    # погрузка всего
+        load_total   = g(1)    # ПОГРУЗКА всего за сутки (НЕ план выгрузки)
         load_avg     = g(2)    # погрузка ср/сут
         capacity     = g(10)   # перерабатывающая способность
         load_fact    = g(11)   # ВЫГРУЗКА факт на 18:00
@@ -375,7 +375,7 @@ def parse_port_stations(path, report_date, road_code):
         records.append(dict(
             report_date=report_date, road=road_code, station=station,
             row_level=row_level,
-            load_plan=load_plan, load_fact=load_fact, capacity=capacity,
+            load_total=load_total, load_fact=load_fact, capacity=capacity,
             load_avg=load_avg, unload_avg=unload_avg,
             wagons_total=int(wagons_total) if wagons_total else None,
             wagons_road=int(wagons_road) if wagons_road else None,
@@ -482,14 +482,14 @@ def write_locomotives(conn, records):
 
 def write_port_stations(conn, records):
     sql = """INSERT INTO spravki_port_stations
-             (report_date,road,station,row_level,load_plan,load_fact,capacity,
+             (report_date,road,station,row_level,load_total,load_fact,capacity,
               load_avg,unload_avg,wagons_total,wagons_road,detained_trains,
               detained_trains_road,unload_plan_next)
              VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     with conn.cursor() as cur:
         for r in records:
             cur.execute(sql, (r['report_date'],r['road'],r['station'],r.get('row_level'),
-                              r['load_plan'],r['load_fact'],r['capacity'],
+                              r['load_total'],r['load_fact'],r['capacity'],
                               r.get('load_avg'),r.get('unload_avg'),r['wagons_total'],
                               r['wagons_road'],r['detained_trains'],
                               r.get('detained_trains_road'),r.get('unload_plan_next')))

@@ -41,8 +41,8 @@ COMMENT ON COLUMN spravki_failures.freight_train_hours IS 'Суммарная з
 COMMENT ON COLUMN spravki_port_stations.road IS 'Код дороги припортовой станции (ДВОСТ, ОКТ, СКАВ). Полное имя см. road_codes.';
 COMMENT ON COLUMN spravki_port_stations.station IS 'Наименование припортовой станции/терминала, либо строка-итог (''ИТОГО ПО ПОРТАМ СЕТИ'', ''ДАЛЬНЕВОСТОЧНАЯ'').';
 COMMENT ON COLUMN spravki_port_stations.row_level IS 'Уровень строки: network=итог по сети, road=итог по дороге, port=станция, terminal=терминал, cargo=род груза. Итог по сети — в строках network, по дороге — в road; port/terminal/cargo — детальные уровни, которые уже входят в эти итоги.';
-COMMENT ON COLUMN spravki_port_stations.load_plan IS 'План выгрузки, вагон/сут.';
-COMMENT ON COLUMN spravki_port_stations.load_fact IS 'Фактическая выгрузка, вагон/сут.';
+COMMENT ON COLUMN spravki_port_stations.load_total IS 'Погрузка всего за сутки, вагон/сут. Это ПОГРУЗКА, а не план выгрузки; с фактической выгрузкой (load_fact) напрямую не сопоставляется. Плана выгрузки на текущие сутки в справке нет (есть на следующие — unload_plan_next).';
+COMMENT ON COLUMN spravki_port_stations.load_fact IS 'Фактическая выгрузка за сутки, вагон/сут. Эффективность порта = load_fact / capacity (использование мощности).';
 COMMENT ON COLUMN spravki_port_stations.capacity IS 'Перерабатывающая способность (мощность), вагон/сут. Использование мощности = load_fact / capacity.';
 COMMENT ON COLUMN spravki_port_stations.wagons_total IS 'Наличие вагонов на станции/в узле, всего.';
 COMMENT ON COLUMN spravki_port_stations.wagons_road IS 'В т.ч. вагонов местной дороги.';

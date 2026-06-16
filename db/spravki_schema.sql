@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS spravki_port_stations (
     road          varchar(20),     -- 'ДВОСТ','ОКТ','СКАВ'
     station       varchar(200),
     row_level     varchar(10),     -- ИЕРАРХИЯ: network/road/port/terminal/cargo (из отступа)
-    load_plan     numeric(10,1),   -- погрузка всего
+    load_total    numeric(10,1),   -- ПОГРУЗКА всего за сутки (НЕ план выгрузки)
     load_fact     numeric(10,1),   -- ВЫГРУЗКА факт на 18:00
     capacity      numeric(10,1),   -- перерабатывающая способность (норма выгрузки)
     load_avg      numeric(10,1),   -- погрузка ср/сут
@@ -131,6 +131,13 @@ ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS load_avg numeric(10,1
 ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS unload_avg numeric(10,1);
 ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS detained_trains_road int;
 ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS unload_plan_next numeric(10,1);
+-- rename misnomer load_plan -> load_total (it was «погрузка всего», never a план выгрузки).
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name='spravki_port_stations' AND column_name='load_plan') THEN
+    ALTER TABLE spravki_port_stations RENAME COLUMN load_plan TO load_total;
+  END IF;
+END $$;
 COMMENT ON TABLE spravki_port_stations IS
   'Работа припортовых станций: ВЫГРУЗКА факт (load_fact) против перерабатывающей способности (capacity), '
   'наличие вагонов, отставленные поезда — для вопросов об использовании перерабатывающей способности портов. '
