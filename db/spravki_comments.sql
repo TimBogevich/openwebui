@@ -31,8 +31,8 @@ COMMENT ON COLUMN spravki_failures.investigated IS 'Расследовано о�
 COMMENT ON COLUMN spravki_failures.duration_2025 IS 'Суммарная продолжительность отказов за прошлый год, ч.';
 COMMENT ON COLUMN spravki_failures.duration_2026 IS 'Суммарная продолжительность отказов в текущем периоде, ч.';
 COMMENT ON COLUMN spravki_failures.duration_change_pct IS 'Изменение продолжительности отказов к прошлому году, %.';
-COMMENT ON COLUMN spravki_failures.freight_trains_delayed IS 'Задержано грузовых поездов из-за отказов.';
-COMMENT ON COLUMN spravki_failures.freight_train_hours IS 'Суммарная задержка грузовых поездов, поездо-часов.';
+COMMENT ON COLUMN spravki_failures.freight_trains_delayed IS 'Задержано грузовых поездов из-за отказов — КОЛИЧЕСТВО поездов, единиц (ЕД., НЕ поездо-часы). По сети 585 = 585 поездов.';
+COMMENT ON COLUMN spravki_failures.freight_train_hours IS 'Суммарная ПРОДОЛЖИТЕЛЬНОСТЬ задержки этих поездов, поездо-часов (п/ч). По сети 574,93 п/ч. Это другая величина, чем количество поездов (freight_trains_delayed).';
 
 -- ===================== spravki_port_stations =====================
 -- Иерархия в одной таблице через row_level. Верно 12.03.2026: network detained=266,
@@ -42,8 +42,8 @@ COMMENT ON COLUMN spravki_port_stations.road IS 'Код дороги припо�
 COMMENT ON COLUMN spravki_port_stations.station IS 'Наименование припортовой станции/терминала, либо строка-итог (''ИТОГО ПО ПОРТАМ СЕТИ'', ''ДАЛЬНЕВОСТОЧНАЯ'').';
 COMMENT ON COLUMN spravki_port_stations.row_level IS 'Уровень строки: network=итог по сети, road=итог по дороге, port=станция, terminal=терминал, cargo=род груза. Итог по сети — в строках network, по дороге — в road; port/terminal/cargo — детальные уровни, которые уже входят в эти итоги.';
 COMMENT ON COLUMN spravki_port_stations.load_total IS 'Погрузка всего за сутки, вагон/сут. Это ПОГРУЗКА, а не план выгрузки; с фактической выгрузкой (load_fact) напрямую не сопоставляется. Плана выгрузки на текущие сутки в справке нет (есть на следующие — unload_plan_next).';
-COMMENT ON COLUMN spravki_port_stations.load_fact IS 'Фактическая выгрузка за сутки, вагон/сут. Эффективность порта = load_fact / capacity (использование мощности).';
-COMMENT ON COLUMN spravki_port_stations.capacity IS 'Перерабатывающая способность (мощность), вагон/сут. Использование мощности = load_fact / capacity.';
+COMMENT ON COLUMN spravki_port_stations.load_fact IS 'Фактическая выгрузка за сутки, вагон/сут. Эффективность порта = load_fact / capacity (использование перерабатывающей способности).';
+COMMENT ON COLUMN spravki_port_stations.capacity IS 'Перерабатывающая способность, вагон/сут. Использование перерабатывающей способности = load_fact / capacity.';
 COMMENT ON COLUMN spravki_port_stations.wagons_total IS 'Наличие вагонов на станции/в узле, всего.';
 COMMENT ON COLUMN spravki_port_stations.wagons_road IS 'В т.ч. вагонов местной дороги.';
 COMMENT ON COLUMN spravki_port_stations.detained_trains IS 'Отставленные (задержанные) поезда на уровне данной строки.';
@@ -57,13 +57,13 @@ COMMENT ON COLUMN spravki_port_stations.unload_plan_next IS 'План выгру
 -- 'СЕТЬ' в road — строка-итог по сети.
 COMMENT ON COLUMN spravki_speed.speed_type IS 'Тип скорости: section=участковая, technical=техническая. Обе в км/ч.';
 COMMENT ON COLUMN spravki_speed.road IS 'Дорога. ''СЕТЬ'' — строка-итог по сети. В секции technical коды дорог (ОКТ, СВР…), в section — полные имена.';
-COMMENT ON COLUMN spravki_speed.prev_year IS 'Скорость за аналогичный период прошлого года, км/ч.';
+COMMENT ON COLUMN spravki_speed.prev_year IS 'Скорость за аналогичный период прошлого года (нарастающим итогом с начала месяца), км/ч. Сопоставляется с month_fact, а не с суточным day_fact.';
 COMMENT ON COLUMN spravki_speed.norm IS 'Норма (план) скорости, км/ч.';
-COMMENT ON COLUMN spravki_speed.day_fact IS 'Факт за сутки, км/ч.';
-COMMENT ON COLUMN spravki_speed.day_delta IS 'Отклонение за сутки от нормы, км/ч.';
-COMMENT ON COLUMN spravki_speed.month_fact IS 'Факт с начала месяца (нарастающим итогом), км/ч.';
-COMMENT ON COLUMN spravki_speed.month_delta IS 'Отклонение за месяц от нормы, км/ч.';
-COMMENT ON COLUMN spravki_speed.year_delta IS 'Отклонение к прошлому году, км/ч.';
+COMMENT ON COLUMN spravki_speed.day_fact IS 'Факт за сутки, км/ч. Его отклонение к норме — day_delta.';
+COMMENT ON COLUMN spravki_speed.day_delta IS 'Отклонение факта за сутки (day_fact) от нормы, км/ч.';
+COMMENT ON COLUMN spravki_speed.month_fact IS 'Факт с начала месяца (нарастающим итогом), км/ч. Его отклонение к норме — month_delta, к прошлому году — year_delta.';
+COMMENT ON COLUMN spravki_speed.month_delta IS 'Отклонение факта с начала месяца (month_fact) от нормы, км/ч.';
+COMMENT ON COLUMN spravki_speed.year_delta IS 'Отклонение к прошлому году = month_fact − prev_year, км/ч. Считается от МЕСЯЧНОГО факта (нарастающим итогом), НЕ от суточного. В таблице с этим столбцом показывай факт с начала месяца, а не за сутки.';
 COMMENT ON COLUMN spravki_speed.nopass_day_fact IS 'Без учёта пассажирского движения: факт за сутки, км/ч.';
 COMMENT ON COLUMN spravki_speed.nopass_month_fact IS 'Без пасс.: факт с начала месяца, км/ч.';
 COMMENT ON COLUMN spravki_speed.nopass_prev_year IS 'Без пасс.: прошлый год, км/ч.';
