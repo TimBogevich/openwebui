@@ -527,41 +527,21 @@ def find_indicator(query: str, k: int = 5) -> str:
     # doesn't conclude "not in metrics → no data". Match on the user query, not
     # on the returned candidates (which are metrics-only by definition).
     q_low = (query or "").lower()
+    # (keywords, table) — descriptions live in each table's COMMENT ON TABLE,
+    # surfaced by describe(table). Keep this list short to avoid prompt bloat.
     SPRAVKI_KEYWORDS = [
-        # (keywords, table, what's there)
-        (('отставлен', 'задержан', 'броса', 'причин задержк', 'код'),
-         'spravki_delays',
-         'отставленные/задержанные поезда по кодам причин и дорогам, итог по сети (v_delays_total), '
-         'JOIN delay_reason_codes для категории ответственности'),
-        (('отказ техсредств', 'отказ тех', 'отказы тех', 'касант'),
-         'spravki_failures',
-         'отказы 1-2 категории по дорогам и хозкомплексам (локомотивный/инфраструктурный/вагонный)'),
-        (('припорто', 'портов', 'выгрузк', 'перерабатыв', 'мощность порт'),
-         'spravki_port_stations',
-         'припортовые станции (load_fact, capacity, отставленные поезда), v_ports_network — итог по сети'),
-        (('сортировочн', 'юдино', 'дема', 'пермь-сорт', 'простой транзитн', 'рабочий парк'),
-         'spravki_sort_stations',
-         'важнейшие сортировочные станции (простой транзитного вагона, рабочий парк vs норматив)'),
-        (('техническая скорость', 'участковая скорость', 'скорост'),
-         'spravki_speed',
-         'участковая (section, road=СЕТЬ) и техническая (technical, road=РОС) скорость по дорогам, км/ч'),
-        (('ограничен', 'асу воп', 'не предусм'),
-         'spravki_speed_restrictions',
-         'ограничения скорости, не предусмотренные графиком (restrictions=количество ед., restrictions_km=протяжённость км)'),
-        (('локомотив', 'парк локомотив', 'недосодерж'),
-         'spravki_locomotives',
-         'эксплуатируемый парк локомотивов по полигонам и типам тяги (AC/DC/diesel), '
-         'polygon IS NULL = итог по полигону, иначе — дороги внутри полигона'),
+        (('отставлен', 'задержан', 'броса', 'причин задержк', 'код'), 'spravki_delays'),
+        (('отказ техсредств', 'отказ тех', 'отказы тех', 'касант'),   'spravki_failures'),
+        (('припорто', 'портов', 'выгрузк', 'перерабатыв', 'мощность порт'), 'spravki_port_stations'),
+        (('сортировочн', 'юдино', 'дема', 'пермь-сорт', 'простой транзитн', 'рабочий парк'), 'spravki_sort_stations'),
+        (('техническая скорость', 'участковая скорость', 'скорост'),  'spravki_speed'),
+        (('ограничен', 'асу воп', 'не предусм'),                       'spravki_speed_restrictions'),
+        (('локомотив', 'парк локомотив', 'недосодерж'),                'spravki_locomotives'),
     ]
-    matches = []
-    for kws, table, desc in SPRAVKI_KEYWORDS:
-        if any(kw in q_low for kw in kws):
-            matches.append((table, desc))
+    matches = [tbl for kws, tbl in SPRAVKI_KEYWORDS if any(k in q_low for k in kws)]
     if matches:
         out.append("")
-        out.append("СМ. ТАКЖЕ таблицы-справки (не индексируются find_indicator, запроси describe):")
-        for table, desc in matches:
-            out.append(f"  • {table} — {desc}")
+        out.append("СМ. ТАКЖЕ таблицы-справки (запроси describe для деталей): " + ", ".join(matches))
 
     return "\n".join(out)
 

@@ -77,13 +77,13 @@ COMMENT ON COLUMN spravki_speed.pass_year_delta IS 'Пасс.: отклонен�
 COMMENT ON COLUMN spravki_locomotives.section IS 'Тип тяги: AC=переменный ток, DC=постоянный ток, diesel=тепловозы.';
 COMMENT ON COLUMN spravki_locomotives.polygon IS 'Тяговый полигон, к которому относится строка-дорога. NULL означает, что сама строка является итогом по полигону (поле road в такой строке = название полигона: Восточный, Северо-Западный, Юго-Западный, Московский, Октябрьский). Не-NULL означает, что строка — отдельная дорога ВНУТРИ указанного полигона.';
 COMMENT ON COLUMN spravki_locomotives.road IS 'В строках polygon IS NULL — название тягового полигона (Восточный, Северо-Западный, …) — это уровень итога. В строках polygon=non-NULL — код дороги внутри полигона (В-СИБ, ДВОСТ, ЗАБ, КРАС, ОКТ, СЕВ, …); расшифровка через JOIN road_codes. Итоги по полигону и детальные строки дорог под ним — разные уровни, складывать их вместе нельзя.';
-COMMENT ON COLUMN spravki_locomotives.plan IS 'План эксплуатируемого парка локомотивов (по типу тяги).';
-COMMENT ON COLUMN spravki_locomotives.fact IS 'Факт эксплуатируемого парка (по типу тяги).';
-COMMENT ON COLUMN spravki_locomotives.delta IS 'Отклонение факт−план (по типу тяги), локомотивов.';
-COMMENT ON COLUMN spravki_locomotives.plan_total IS 'План парка, всего по строке.';
-COMMENT ON COLUMN spravki_locomotives.fact_total IS 'Факт парка, всего по строке.';
-COMMENT ON COLUMN spravki_locomotives.delta_total IS 'Отклонение факт−план, всего, локомотивов.';
-COMMENT ON COLUMN spravki_locomotives.reserve IS 'Локомотивы в резерве.';
+COMMENT ON COLUMN spravki_locomotives.plan IS 'План парка в ГРУЗОВОМ виде движения (только операционный парк), по типу тяги. Для вопросов о недосодержании парка в грузовом движении используется эта колонка.';
+COMMENT ON COLUMN spravki_locomotives.fact IS 'Факт парка в ГРУЗОВОМ виде движения (только операционный парк), по типу тяги.';
+COMMENT ON COLUMN spravki_locomotives.delta IS 'Отклонение факт−план в ГРУЗОВОМ виде движения (по типу тяги), локомотивов. Отрицательное значение = недосодержание парка в грузовом движении.';
+COMMENT ON COLUMN spravki_locomotives.plan_total IS 'План парка ПО ВСЕМ ВИДАМ ДВИЖЕНИЯ (грузовое + резерв + прочие категории), всего по строке. Шире, чем plan; для вопросов о грузовом виде движения брать plan, не plan_total.';
+COMMENT ON COLUMN spravki_locomotives.fact_total IS 'Факт парка ПО ВСЕМ ВИДАМ ДВИЖЕНИЯ, всего по строке. Для вопросов о грузовом — fact, не fact_total.';
+COMMENT ON COLUMN spravki_locomotives.delta_total IS 'Отклонение факт−план по всем видам движения, локомотивов. Для вопросов о недосодержании в ГРУЗОВОМ движении используется delta, не delta_total.';
+COMMENT ON COLUMN spravki_locomotives.reserve IS 'Локомотивы в резерве (не задействованные в перевозках).';
 
 -- ===================== spravki_sort_stations =====================
 -- Работа важнейших сортировочных станций. Нет столбца «расформировано» отдельно —
