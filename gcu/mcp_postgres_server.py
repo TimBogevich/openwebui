@@ -521,6 +521,48 @@ def find_indicator(query: str, k: int = 5) -> str:
         out.append(f"    name = «{name}»")
     out.append("")
     out.append("ИСПОЛЬЗУЙ name дословно в WHERE m.name = '...' (не через ILIKE/%).")
+
+    # Spravki routing — find_indicator only searches `metrics` indicators.
+    # For topics that live in spravki_* tables, append a redirect so the model
+    # doesn't conclude "not in metrics → no data". Match on the user query, not
+    # on the returned candidates (which are metrics-only by definition).
+    q_low = (query or "").lower()
+    SPRAVKI_KEYWORDS = [
+        # (keywords, table, what's there)
+        (('отставлен', 'задержан', 'броса', 'причин задержк', 'код'),
+         'spravki_delays',
+         'отставленные/задержанные поезда по кодам причин и дорогам, итог по сети (v_delays_total), '
+         'JOIN delay_reason_codes для категории ответственности'),
+        (('отказ техсредств', 'отказ тех', 'отказы тех', 'касант'),
+         'spravki_failures',
+         'отказы 1-2 категории по дорогам и хозкомплексам (локомотивный/инфраструктурный/вагонный)'),
+        (('припорто', 'портов', 'выгрузк', 'перерабатыв', 'мощность порт'),
+         'spravki_port_stations',
+         'припортовые станции (load_fact, capacity, отставленные поезда), v_ports_network — итог по сети'),
+        (('сортировочн', 'юдино', 'дема', 'пермь-сорт', 'простой транзитн', 'рабочий парк'),
+         'spravki_sort_stations',
+         'важнейшие сортировочные станции (простой транзитного вагона, рабочий парк vs норматив)'),
+        (('техническая скорость', 'участковая скорость', 'скорост'),
+         'spravki_speed',
+         'участковая (section, road=СЕТЬ) и техническая (technical, road=РОС) скорость по дорогам, км/ч'),
+        (('ограничен', 'асу воп', 'не предусм'),
+         'spravki_speed_restrictions',
+         'ограничения скорости, не предусмотренные графиком (restrictions=количество ед., restrictions_km=протяжённость км)'),
+        (('локомотив', 'парк локомотив', 'недосодерж'),
+         'spravki_locomotives',
+         'эксплуатируемый парк локомотивов по полигонам и типам тяги (AC/DC/diesel), '
+         'polygon IS NULL = итог по полигону, иначе — дороги внутри полигона'),
+    ]
+    matches = []
+    for kws, table, desc in SPRAVKI_KEYWORDS:
+        if any(kw in q_low for kw in kws):
+            matches.append((table, desc))
+    if matches:
+        out.append("")
+        out.append("СМ. ТАКЖЕ таблицы-справки (не индексируются find_indicator, запроси describe):")
+        for table, desc in matches:
+            out.append(f"  • {table} — {desc}")
+
     return "\n".join(out)
 
 
