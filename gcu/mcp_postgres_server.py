@@ -393,22 +393,17 @@ def query(sql: str) -> str:
     # Anti-loop guard: catch the same SELECT being re-run instead of answering.
     level, prior = _qguard_check(sql)
     if level == 2:
-        return ("⛔ СТОП: этот запрос уже выполнялся "
-                f"{prior + 1} раз(а) с тем же результатом. Данные не изменятся. "
-                "НЕ повторяй запрос — сформулируй ОТВЕТ на основе уже полученных "
-                "данных. Если данных действительно не хватает, честно скажи, "
-                "каких именно, и не зацикливайся.")
+        return ("Запрос уже возвращал тот же результат (" + str(prior + 1) +
+                " раз). Данные в базе не меняются. Сформируй ответ "
+                "на основе уже полученных строк.")
 
     # Zero-result fishing guard: refuse if previous N queries returned 0 rows.
     # Catches the name-fishing loop where each rewrite has a different hash.
     if _consec_zero[0] >= _ZERO_BLOCK_AT:
-        _consec_zero[0] = 0   # reset so user can resume after the warning
-        return ("⛔ СТОП: последние запросы вернули 0 строк подряд. "
-                "Скорее всего, такого РАЗРЕЗА нет (например, разбивки по дорогам у "
-                "этого показателя), а не самого показателя. Если основные данные уже "
-                "получены ранее — формулируй ОТВЕТ по ним и укажи, что детализация "
-                "отсутствует. Если данных ещё нет — уточни запрос, а не перебирай "
-                "формулировки.")
+        _consec_zero[0] = 0
+        return ("Несколько последних запросов вернули 0 строк. "
+                "Возможно, запрошенная разбивка для этого показателя отсутствует. "
+                "Сформируй ответ по полученным данным, указав, что детализация недоступна.")
 
     result, err = _run_select(sql)
     if err:
@@ -423,12 +418,10 @@ def query(sql: str) -> str:
 
     out = _fmt_table(cols, rows)
     if level == 1:
-        out = ("⚠️ Внимание: ты уже выполнял ЭТОТ ЖЕ запрос — результат тот же. "
-               "Переходи к ОТВЕТУ или измени запрос, не повторяй его снова.\n\n" + out)
+        out = ("Запрос уже выполнялся — результат тот же. "
+               "Переходи к ответу.\n\n" + out)
     elif _query_calls[0] >= _QVOL_WARN:
-        # Soft, non-blocking nudge — data is still returned in full below.
-        out = ("⚠️ Подсказка: сделано уже несколько запросов; вероятно, данных "
-               "достаточно — рассмотри возможность сформулировать ОТВЕТ.\n\n" + out)
+        out = ("Сделано несколько запросов — данных, вероятно, достаточно для ответа.\n\n" + out)
     return out
 
 
@@ -463,18 +456,11 @@ _FIND_MAX = 2       # after 2 calls, refuse and force the model to pick
 
 @mcp.tool()
 def find_indicator(query: str, k: int = 5) -> str:
-    """Семантический поиск показателя в metrics по СМЫСЛУ запроса.
+    """Семантический поиск показателя в metrics по смыслу запроса.
 
-    Используй это ВМЕСТО name % 'слова' или name ILIKE '%слова%' — даёт более
-    точные результаты по неточным/перефразированным запросам. Возвращает топ-k
-    реальных имён показателей с их типичным indicator_number, разделом и единицей.
-    После получения списка — выбирай подходящее name и используй ТОЧНОЕ значение
-    в WHERE name = '...' для query().
-
-    :param query: вопрос или ключевое выражение на русском (например
-                  'задержанные отправки', 'участковая скорость', 'погрузка угля')
-    :param k: сколько вариантов вернуть (1-10, по умолчанию 5)
-    :return: список кандидатов с метаданными
+    Заменяет перебор вариантов WHERE name % '...' / name ILIKE '%...%'.
+    Возвращает k лучших кандидатов с реальными именами из базы, номером,
+    разделом и единицей измерения.
     """
     import psycopg
     _maybe_new_question()
@@ -483,11 +469,10 @@ def find_indicator(query: str, k: int = 5) -> str:
     # The first call returns 5-10 good candidates — that's enough information.
     _find_calls[0] += 1
     if _find_calls[0] > _FIND_MAX:
-        _find_calls[0] = 0   # reset so user can resume
-        return ("⛔ СТОП: find_indicator уже вызывался " + str(_FIND_MAX) +
-                " раз(а). ВЫБЕРИ один из ранее возвращённых кандидатов и сделай "
-                "SQL-запрос через query(). Если ни один не подходит — дай честный "
-                "ответ «искомого показателя в БД нет», не перебирай формулировки.")
+        _find_calls[0] = 0
+        return ("find_indicator вызывался слишком часто. "
+                "Выбери один из ранее полученных кандидатов и выполни SQL-запрос "
+                "через query().")
 
     k = max(1, min(int(k), 10))
     try:
@@ -520,7 +505,7 @@ def find_indicator(query: str, k: int = 5) -> str:
         out.append(f"  sim={sim:.3f}  inum={inum}  раздел={section}  ед={unit}{road_tag}")
         out.append(f"    name = «{name}»")
     out.append("")
-    out.append("ИСПОЛЬЗУЙ name дословно в WHERE m.name = '...' (не через ILIKE/%).")
+    out.append("Для SQL используй name = '...' (вместо ILIKE / %).")
 
     # Spravki routing — find_indicator only searches `metrics` indicators.
     # For topics that live in spravki_* tables, append a redirect so the model
@@ -541,7 +526,7 @@ def find_indicator(query: str, k: int = 5) -> str:
     matches = [tbl for kws, tbl in SPRAVKI_KEYWORDS if any(k in q_low for k in kws)]
     if matches:
         out.append("")
-        out.append("СМ. ТАКЖЕ таблицы-справки (запроси describe для деталей): " + ", ".join(matches))
+        out.append("Таблицы-справки (describe для состава): " + ", ".join(matches))
 
     return "\n".join(out)
 
