@@ -35,3 +35,4 @@ scripts/*.log
 
 # Cross-container test staging (scratch)
 _test_stage/
+scripts/ensure_gcu_embedder.log
