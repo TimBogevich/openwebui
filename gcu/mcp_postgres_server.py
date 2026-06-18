@@ -510,6 +510,11 @@ def find_indicator(query: str, k: int = 5) -> str:
         (('техническая скорость', 'участковая скорость', 'скорост'),  'spravki_speed'),
         (('ограничен', 'асу воп', 'не предусм'),                       'spravki_speed_restrictions'),
         (('локомотив', 'парк локомотив', 'недосодерж'),                'spravki_locomotives'),
+        # classifier — surfaces when user asks about responsibility / who is to blame /
+        # what a code means. Always paired with spravki_delays via JOIN on delay_code.
+        (('ответствен', 'по чьей вине', 'кто винов', 'расшифров', 'классификатор',
+          'распоряжен', 'методик', 'код 1', 'код 5', 'код 21', 'код 22', 'код 43',
+          'код 92', 'код причин'), 'delay_reason_codes'),
     ]
     matches = [tbl for kws, tbl in SPRAVKI_KEYWORDS if any(k in q_low for k in kws)]
 
