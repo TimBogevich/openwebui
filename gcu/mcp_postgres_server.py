@@ -498,22 +498,10 @@ def find_indicator(query: str, k: int = 5) -> str:
     if not rows:
         return ("Индекс пуст. Запусти gcu/build_indicator_index.py чтобы построить.")
 
-    out = [f"Топ-{len(rows)} кандидатов (по семантическому сходству):"]
-    out.append("")
-    for name, inum, section, unit, n_occ, has_road, sim in rows:
-        road_tag = " [есть разбивка по дорогам]" if has_road else " [только итог по сети, разреза по дорогам нет]"
-        out.append(f"  sim={sim:.3f}  inum={inum}  раздел={section}  ед={unit}{road_tag}")
-        out.append(f"    name = «{name}»")
-    out.append("")
-    out.append("Для SQL используй name = '...' (вместо ILIKE / %).")
-
-    # Spravki routing — find_indicator only searches `metrics` indicators.
-    # For topics that live in spravki_* tables, append a redirect so the model
-    # doesn't conclude "not in metrics → no data". Match on the user query, not
-    # on the returned candidates (which are metrics-only by definition).
+    # Spravki routing — find_indicator only searches `metrics`. Many user
+    # questions are answered from spravki_* tables; surface that FIRST so the
+    # model doesn't fish invented table names like "speed_ind", "indicators".
     q_low = (query or "").lower()
-    # (keywords, table) — descriptions live in each table's COMMENT ON TABLE,
-    # surfaced by describe(table). Keep this list short to avoid prompt bloat.
     SPRAVKI_KEYWORDS = [
         (('отставлен', 'задержан', 'броса', 'причин задержк', 'код'), 'spravki_delays'),
         (('отказ техсредств', 'отказ тех', 'отказы тех', 'касант'),   'spravki_failures'),
@@ -524,10 +512,21 @@ def find_indicator(query: str, k: int = 5) -> str:
         (('локомотив', 'парк локомотив', 'недосодерж'),                'spravki_locomotives'),
     ]
     matches = [tbl for kws, tbl in SPRAVKI_KEYWORDS if any(k in q_low for k in kws)]
-    if matches:
-        out.append("")
-        out.append("Таблицы-справки (describe для состава): " + ", ".join(matches))
 
+    out = []
+    if matches:
+        out.append("ИСТОЧНИК ДАННЫХ ДЛЯ ЭТОГО ВОПРОСА: " + ", ".join(matches) +
+                   ". Вызови describe(<table>) и далее query SELECT по этой таблице. "
+                   "В metrics этих данных нет — там только основные показатели.")
+        out.append("")
+    out.append(f"Кандидаты в metrics по смыслу запроса (топ-{len(rows)}):")
+    out.append("")
+    for name, inum, section, unit, n_occ, has_road, sim in rows:
+        road_tag = " [есть разбивка по дорогам]" if has_road else " [только итог по сети]"
+        out.append(f"  sim={sim:.3f}  inum={inum}  раздел={section}  ед={unit}{road_tag}")
+        out.append(f"    name = «{name}»")
+    out.append("")
+    out.append("Для SQL используй name = '...' (вместо ILIKE / %).")
     return "\n".join(out)
 
 
