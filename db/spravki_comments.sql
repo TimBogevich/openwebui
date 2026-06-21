@@ -11,11 +11,14 @@ COMMENT ON COLUMN spravki_delays.trains IS 'Количество задержа�
 COMMENT ON COLUMN spravki_delays.wagons IS 'Количество вагонов в задержанных поездах в данной строке.';
 
 -- ===================== spravki_failures =====================
--- Отказы техсредств 1-2 категории. Таблица содержит две секции по dept:
--- (1) по дорогам с итогом Всегопосети, (2) по дорогам + хозяйственным комплексам
--- (вагонный/инфраструктурный/локомотивный), тоже с итогом Всегопосети.
--- Секции — независимые срезы одних и тех же отказов.
-COMMENT ON COLUMN spravki_failures.dept IS 'Подразделение: дорога (Октябрьская, Свердловская …) или хозяйственный комплекс (ИНФРАСТРУКТУРНЫЙ, ВАГОННЫЙ, ЛОКОМОТИВНЫЙ …). Всегопосети — строка-итог (сумма по строкам секции).';
+-- Отказы техсредств 1-2 категории. Таблица содержит ТРИ раздела (колонка section):
+-- section=1 — отказы, ПРОИЗОШЕДШИЕ на территории дороги (с итогом Всегопосети);
+-- section=2 — отказы ПО ОТВЕТСТВЕННОСТИ подразделений дороги (с итогом Всегопосети);
+-- section=3 — разбивка по хозяйственным комплексам (вагонный/инфраструктурный/локомотивный).
+-- Одна дорога есть в section 1 И 2 с РАЗНЫМИ значениями; каждый раздел независимо
+-- суммируется в сетевой итог — НИКОГДА не складывай разделы между собой (задвоишь).
+COMMENT ON COLUMN spravki_failures.section IS '1=произошедшие на территории дороги; 2=по ответственности подразделений; 3=по хозяйственным комплексам. Каждый раздел сам суммируется в сетевой ИТОГО — НЕ складывать разделы.';
+COMMENT ON COLUMN spravki_failures.dept IS 'Подразделение: дорога (Октябрьская, Свердловская …) или хозяйственный комплекс (ИНФРАСТРУКТУРНЫЙ, ВАГОННЫЙ, ЛОКОМОТИВНЫЙ …). Всегопосети — строка-итог (сумма по строкам данного раздела section).';
 COMMENT ON COLUMN spravki_failures.failures_2025 IS 'Число отказов за аналогичный период прошлого года.';
 COMMENT ON COLUMN spravki_failures.failures_2026 IS 'Число отказов в текущем периоде.';
 COMMENT ON COLUMN spravki_failures.change_pct IS 'Изменение числа отказов к прошлому году, %.';
@@ -36,13 +39,19 @@ COMMENT ON COLUMN spravki_port_stations.row_level IS 'Уровень строк�
 COMMENT ON COLUMN spravki_port_stations.load_total IS 'Погрузка за сутки, вагон/сут.';
 COMMENT ON COLUMN spravki_port_stations.load_fact IS 'Фактическая выгрузка за сутки, вагон/сут. Коэффициент использования мощности = load_fact / capacity.';
 COMMENT ON COLUMN spravki_port_stations.capacity IS 'Перерабатывающая способность, вагон/сут.';
-COMMENT ON COLUMN spravki_port_stations.wagons_total IS 'Наличие вагонов на станции, всего.';
-COMMENT ON COLUMN spravki_port_stations.wagons_road IS 'В том числе вагонов местной дороги.';
-COMMENT ON COLUMN spravki_port_stations.detained_trains IS 'Отставленные поезда на уровне данной строки.';
-COMMENT ON COLUMN spravki_port_stations.detained_trains_road IS 'В том числе отставленные поезда местной дороги.';
-COMMENT ON COLUMN spravki_port_stations.load_avg IS 'Средняя выгрузка за период, вагон/сут.';
-COMMENT ON COLUMN spravki_port_stations.unload_avg IS 'Средняя выгрузка/обработка за период, вагон/сут.';
-COMMENT ON COLUMN spravki_port_stations.unload_plan_next IS 'План выгрузки на следующие сутки, вагон/сут.';
+COMMENT ON COLUMN spravki_port_stations.wagons_total IS 'Наличие вагонов НАЗНАЧЕНИЕМ на припортовые станции по всей СЕТИ, факт (вагоны В ПУТИ к портам, НЕ на станции!). Норма — wagons_dest_net_norm.';
+COMMENT ON COLUMN spravki_port_stations.wagons_road IS 'Наличие вагонов НАЗНАЧЕНИЕМ на припортовые станции на ДОРОГЕ назначения, факт. Норма — wagons_dest_road_norm.';
+COMMENT ON COLUMN spravki_port_stations.wagons_dest_net_norm IS 'Наличие вагонов назначением→порты по СЕТИ, НОРМА.';
+COMMENT ON COLUMN spravki_port_stations.wagons_dest_road_norm IS 'Наличие вагонов назначением→порты на ДОРОГЕ, НОРМА.';
+COMMENT ON COLUMN spravki_port_stations.wagons_at_station_18 IS 'Наличие вагонов, фактически находящихся НА САМОЙ припортовой станции на 18:00. ЭТО ответ на «вагоны на припортовых станциях».';
+COMMENT ON COLUMN spravki_port_stations.wagons_at_station_06 IS 'Наличие вагонов на самой станции на 06:00 следующих суток.';
+COMMENT ON COLUMN spravki_port_stations.detained_trains IS 'Отставленные поезда (сеть, назначением→порты) на уровне данной строки.';
+COMMENT ON COLUMN spravki_port_stations.detained_trains_road IS 'Отставленные поезда на дороге назначения.';
+COMMENT ON COLUMN spravki_port_stations.load_total IS 'Погрузка за сутки, всего, вагон/сут.';
+COMMENT ON COLUMN spravki_port_stations.load_avg IS 'Погрузка средняя за период (ср/сут), вагон/сут.';
+COMMENT ON COLUMN spravki_port_stations.unload_avg IS 'Выгрузка средняя за период (ср/сут), вагон/сут.';
+COMMENT ON COLUMN spravki_port_stations.unload_06 IS 'Выгрузка на 06:00 следующих суток, вагон/сут.';
+COMMENT ON COLUMN spravki_port_stations.unload_plan_next IS 'План выгрузки на 18:00 следующих суток, вагон/сут.';
 
 -- ===================== spravki_speed =====================
 -- Все скорости и отклонения — в км/ч.
@@ -93,8 +102,10 @@ COMMENT ON COLUMN spravki_sort_stations.formed_trains IS 'Сформирован
 COMMENT ON COLUMN spravki_sort_stations.sent_trains IS 'Отправлено поездов, ед.';
 COMMENT ON COLUMN spravki_sort_stations.avg_weight IS 'Средний вес состава, т.';
 COMMENT ON COLUMN spravki_sort_stations.avg_length IS 'Средняя длина состава, усл. ваг.';
-COMMENT ON COLUMN spravki_sort_stations.idle_transit_pere IS 'Простой транзитного вагона с переработкой, ч.';
-COMMENT ON COLUMN spravki_sort_stations.idle_transit_pere_norm IS 'Норматив простоя транзитного вагона с переработкой, ч.';
+COMMENT ON COLUMN spravki_sort_stations.idle_transit_pere IS 'Простой транзитного вагона С ПЕРЕРАБОТКОЙ, факт, ч.';
+COMMENT ON COLUMN spravki_sort_stations.idle_transit_pere_norm IS 'Норматив простоя транзитного вагона С ПЕРЕРАБОТКОЙ, ч.';
+COMMENT ON COLUMN spravki_sort_stations.idle_transit_nopere IS 'Простой транзитного вагона БЕЗ ПЕРЕРАБОТКИ, факт, ч. (для вопроса «без переработки» — эти колонки, НЕ pere).';
+COMMENT ON COLUMN spravki_sort_stations.idle_transit_nopere_norm IS 'Норматив простоя транзитного вагона БЕЗ ПЕРЕРАБОТКИ, ч.';
 
 -- ===================== spravki_speed_restrictions =====================
 -- Ограничения скорости, не предусмотренные графиком движения поездов.

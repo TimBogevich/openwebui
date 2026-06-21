@@ -60,15 +60,26 @@ ALTER TABLE spravki_failures ADD COLUMN IF NOT EXISTS duration_2026 numeric(10,2
 ALTER TABLE spravki_failures ADD COLUMN IF NOT EXISTS duration_change_pct numeric(8,2);
 ALTER TABLE spravki_failures ADD COLUMN IF NOT EXISTS freight_trains_delayed int;
 ALTER TABLE spravki_failures ADD COLUMN IF NOT EXISTS freight_train_hours numeric(10,2);
+ALTER TABLE spravki_failures ADD COLUMN IF NOT EXISTS section smallint;  -- 1=произошедшие на дороге, 2=по ответственности, 3=по комплексам
 CREATE INDEX IF NOT EXISTS idx_failures_date ON spravki_failures (report_date);
 COMMENT ON TABLE spravki_failures IS
   'Отказы техсредств 1-2 категории по подразделениям (дорогам и комплексам). '
   'failures_2026 — отказы за сутки, change_pct — % к 2025. '
   'ВНИМАНИЕ ПРИ АГРЕГАЦИИ: есть И детальные строки, И готовые итоги. Сетевой итог = '
   'строка dept ILIKE ''%Всего по сети%'' (НЕ суммируй подразделения — задвоишь). '
-  'Разрезы по комплексам — строки dept ILIKE ''%ВСЕГО по ... комплексу%'' '
+  'КРИТИЧНО — КОЛОНКА section: одна и та же дорога присутствует ДВАЖДЫ — в section=1 '
+  '(отказы, ПРОИЗОШЕДШИЕ на территории дороги) и section=2 (отказы ПО ОТВЕТСТВЕННОСТИ '
+  'подразделений дороги). Значения разные, но КАЖДЫЙ раздел уже суммируется в сетевой '
+  'итог (234). НИКОГДА не складывай section 1 и 2 для одной дороги — это задвоит. '
+  'Для разреза по дорогам бери ОДИН section (обычно section=1). section=3 — разбивка по '
+  'хозкомплексам. Разрезы по комплексам — строки dept ILIKE ''%ВСЕГО по ... комплексу%'' '
   '(локомотивный/инфраструктурный/вагонный). '
   'Источник справок к ГЦУ. Связывается с metrics по report_date.';
+COMMENT ON COLUMN spravki_failures.section IS
+  '1 = отказы, произошедшие на территории дороги (Раздел 1); '
+  '2 = отказы по ответственности подразделений дороги (Раздел 2); '
+  '3 = разбивка по хозяйственным комплексам (Раздел 3). '
+  'Каждый раздел независимо суммируется в сетевой ИТОГО — НЕ складывать разделы между собой.';
 
 -- ---------------------------------------------------------------------------
 -- spravki_locomotives — Эксплуатируемый парк локомотивов
@@ -117,11 +128,16 @@ CREATE TABLE IF NOT EXISTS spravki_port_stations (
     capacity      numeric(10,1),   -- перерабатывающая способность (норма выгрузки)
     load_avg      numeric(10,1),   -- погрузка ср/сут
     unload_avg    numeric(10,1),   -- выгрузка ср/сут
-    wagons_total  int,             -- наличие вагонов всего
-    wagons_road   int,             -- на дороге
-    detained_trains int,           -- отставленных поездов (станция)
-    detained_trains_road int,      -- отставленных поездов (на дороге)
-    unload_plan_next numeric(10,1) -- план выгрузки на следующие сутки
+    wagons_total  int,             -- наличие на СЕТИ назначением→порты, факт (НЕ на станции!)
+    wagons_road   int,             -- наличие на ДОРОГЕ назначением→порты, факт
+    detained_trains int,           -- отставленных поездов (сеть, назнач.→порты)
+    detained_trains_road int,      -- отставленных поездов (на дороге назнач.)
+    unload_plan_next numeric(10,1),-- план выгрузки на следующие сутки
+    wagons_dest_net_norm  int,     -- наличие на СЕТИ назначением→порты, НОРМА
+    wagons_dest_road_norm int,     -- наличие на ДОРОГЕ назначением→порты, НОРМА
+    wagons_at_station_18  int,     -- наличие на САМОЙ СТАНЦИИ на 18:00 (это «вагоны на станции»)
+    wagons_at_station_06  int,     -- наличие на САМОЙ СТАНЦИИ на 06:00 след. суток
+    unload_06     numeric(10,1)    -- выгрузка на 06:00 след. суток
 );
 CREATE INDEX IF NOT EXISTS idx_ports_date ON spravki_port_stations (report_date);
 -- additive migration for existing DBs (no-op if column already present)
@@ -131,6 +147,11 @@ ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS load_avg numeric(10,1
 ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS unload_avg numeric(10,1);
 ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS detained_trains_road int;
 ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS unload_plan_next numeric(10,1);
+ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS wagons_dest_net_norm int;
+ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS wagons_dest_road_norm int;
+ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS wagons_at_station_18 int;
+ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS wagons_at_station_06 int;
+ALTER TABLE spravki_port_stations ADD COLUMN IF NOT EXISTS unload_06 numeric(10,1);
 -- rename misnomer load_plan -> load_total (it was «погрузка всего», never a план выгрузки).
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.columns
@@ -141,10 +162,16 @@ END $$;
 COMMENT ON TABLE spravki_port_stations IS
   'Работа припортовых станций: ВЫГРУЗКА факт (load_fact) против перерабатывающей способности (capacity), '
   'наличие вагонов, отставленные поезда — для вопросов об использовании перерабатывающей способности портов. '
+  'КРИТИЧНО — ДВА РАЗНЫХ «НАЛИЧИЯ ВАГОНОВ», НЕ ПУТАЙ: '
+  '(а) wagons_total / wagons_road = вагоны НАЗНАЧЕНИЕМ на припортовые станции (по всей СЕТИ / по ДОРОГЕ), '
+  'это вагоны В ПУТИ к портам, а НЕ на самих станциях; '
+  '(б) wagons_at_station_18 / wagons_at_station_06 = вагоны, фактически находящиеся НА САМОЙ СТАНЦИИ '
+  '(на 18:00 и 06:00). Для вопроса «наличие вагонов НА припортовых станциях» бери wagons_at_station_18; '
+  'для «наличие вагонов назначением НА порты / на сети» бери wagons_total. '
   'ВНИМАНИЕ ПРИ АГРЕГАЦИИ: есть И строки-станции, И готовые итоги (станция=''ИТОГО ПО ПОРТАМ СЕТИ'' '
   'и строки-дороги заглавными). Сетевой итог бери из строки ''ИТОГО ПО ПОРТАМ СЕТИ'' '
   '(НЕ суммируй станции — задвоишь с подитогами дорог). '
-  'Источник справок к ГЦУ. Дороги: ДВОСТ, ОКТ, СКАВ. Связывается по report_date.';
+  'ВСЕГО 3 ПРИПОРТОВЫХ НАПРАВЛЕНИЯ (road): ДВОСТ, ОКТ, СКАВ. Источник справок к ГЦУ. Связывается по report_date.';
 
 -- ---------------------------------------------------------------------------
 -- spravki_speed — Участковая и техническая скорость по дорогам
@@ -243,12 +270,21 @@ CREATE INDEX IF NOT EXISTS idx_sortstan_date_road ON spravki_sort_stations (repo
 ALTER TABLE spravki_sort_stations ADD COLUMN IF NOT EXISTS park_norm numeric(10,1);
 ALTER TABLE spravki_sort_stations ADD COLUMN IF NOT EXISTS idle_transit_pere numeric(10,2);
 ALTER TABLE spravki_sort_stations ADD COLUMN IF NOT EXISTS idle_transit_pere_norm numeric(10,2);
+ALTER TABLE spravki_sort_stations ADD COLUMN IF NOT EXISTS idle_transit_nopere numeric(10,2);       -- простой транзит. вагона БЕЗ переработки, факт (час)
+ALTER TABLE spravki_sort_stations ADD COLUMN IF NOT EXISTS idle_transit_nopere_norm numeric(10,2);  -- норма простоя транзит. вагона без переработки (час)
 COMMENT ON TABLE spravki_sort_stations IS
   'Работа важнейших сортировочных станций сети ОАО РЖД: рабочий парк, '
   'роспуск, расформирование, формирование, средний вес и длина состава. '
   'Перегруз/превышение нормативов: working_park (факт на 18:00) против park_norm '
-  '(норматив); idle_transit_pere = ПРОСТОЙ транзитного вагона С ПЕРЕРАБОТКОЙ, факт (час) '
-  'против idle_transit_pere_norm (норма) — это ключевой индикатор перегруженности станции, '
-  'по нему сортируй для «наибольшее превышение простоя». Бери строки period=''сут.''. '
+  '(норматив). ДВА РАЗНЫХ ПРОСТОЯ — НЕ ПУТАЙ: '
+  'idle_transit_pere / idle_transit_pere_norm = простой транзитного вагона С ПЕРЕРАБОТКОЙ '
+  '(факт/норма, час); idle_transit_nopere / idle_transit_nopere_norm = простой транзитного '
+  'вагона БЕЗ ПЕРЕРАБОТКИ (факт/норма, час). Для вопроса «с переработкой» бери pere-колонки, '
+  '«без переработки» — nopere-колонки. Превышение = факт − норма; отклонение % = '
+  '(факт−норма)/норма*100. Сортируй по превышению. Бери строки period=''сут.''. '
   'period: сут.=за сутки, ср/сут=среднесуточно. Источник справок к ГЦУ.';
+COMMENT ON COLUMN spravki_sort_stations.idle_transit_nopere IS
+  'Простой транзитного вагона БЕЗ переработки, ФАКТ (час). Источник: «Т без пер»/факт.';
+COMMENT ON COLUMN spravki_sort_stations.idle_transit_nopere_norm IS
+  'Норма простоя транзитного вагона БЕЗ переработки (час). Источник: «Т без пер»/норма.';
 

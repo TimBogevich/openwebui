@@ -156,13 +156,25 @@ def parse_failures(path, report_date):
             break
 
     records = []
+    section = None   # 1=произошедшие на территории дороги, 2=по ответственности, 3=по комплексам
     for row in rows[data_start:]:
         # Label sits in col[0] for road rows, but col[1] for complex rows
         # (локомотивный/инфраструктурный комплекс) where col[0] is empty.
         dept = _clean(row[0]) if len(row) > 0 and row[0] else None
         if not dept and len(row) > 1 and row[1]:
             dept = _clean(row[1])
-        if not dept or dept.startswith('Раздел') or (dept.startswith('ИТОГО') and len(dept) > 20):
+        if not dept:
+            continue
+        # «РазделN…» header rows mark which cut of the data follows. The source
+        # repeats the SAME roads under Раздел1 (где произошёл отказ) and Раздел2
+        # (по чьей ответственности) — each block already sums to the network ИТОГО,
+        # so they must NEVER be summed together. Stamp every following row with the
+        # section so callers can filter to one block. Раздел3 = разбивка по комплексам.
+        m = re.match(r'Раздел\s*([123])', dept)
+        if m:
+            section = int(m.group(1))
+            continue
+        if dept.startswith('ИТОГО') and len(dept) > 20:
             continue
         # skip section headers (all caps long strings)
         if dept.isupper() and len(dept) > 30:
@@ -208,7 +220,7 @@ def parse_failures(path, report_date):
             continue
 
         records.append(dict(
-            report_date=report_date, dept=dept,
+            report_date=report_date, dept=dept, section=section,
             failures_2025=f25, failures_2026=f26,
             change_pct=pct, resolved=resolved,
             registered=registered, investigated=investigated,
@@ -333,10 +345,14 @@ def parse_port_stations(path, report_date, road_code):
         di = [indents.get(ri, 0) for ri in range(4, len(rows)) if rows[ri][0]]
         road_indent = (min(di) - 1) if di else 0
 
-    # FIXED column layout (0-based): [1]погр.всего [2]погр.ср/сут [3]вагоны норма
-    #   [4]вагоны факт [5]отставл [6]на дороге норма [7]факт [8]отставл.на дороге
-    #   [9]налич.станц 18:00 [10]ПЕРЕР.СПОС [11]ВЫГРУЗКА 18:00 [12]выгр.ср/сут
-    #   [13]налич.06:00 [14]... [15]план выгрузки 13.03
+    # FIXED column layout (0-based). IMPORTANT SEMANTICS (per source header, ДВС/ОКТ/СКАВ):
+    #   [1]погрузка всего  [2]погрузка ср/сут
+    #   "Наличие вагонов на 18:00" = вагоны НАЗНАЧЕНИЕМ на припортовые станции (НЕ на самой
+    #   станции!): [3]на СЕТИ норма [4]на СЕТИ факт [5]отставл.поездов(сеть, назнач.→порты)
+    #   [6]на ДОРОГЕ норма [7]на ДОРОГЕ факт [8]отставл.поездов(дорога назнач.)
+    #   [9]НАЛИЧ. НА САМОЙ СТАНЦИИ на 18:00 12.03  ← это и есть «вагоны на станции»
+    #   [10]перер.способность [11]ВЫГРУЗКА на 18:00 [12]выгрузка ср/сут [13]выгрузка на 06:00
+    #   [14]НАЛИЧ. НА САМОЙ СТАНЦИИ на 06:00 13.03  [15]план выгрузки на 18:00 13.03
     records = []
     for ri, row in enumerate(rows[4:], start=4):
         station = _clean(row[0]) if len(row) > 0 and row[0] else None
@@ -363,10 +379,18 @@ def parse_port_stations(path, report_date, road_code):
         capacity     = g(10)   # перерабатывающая способность
         load_fact    = g(11)   # ВЫГРУЗКА факт на 18:00
         unload_avg   = g(12)   # выгрузка ср/сут
-        wagons_total = g(4)    # наличие вагонов факт
-        wagons_road  = g(7)    # на дороге факт
-        detained     = g(5)    # отставленных поездов (станция)
-        detained_road= g(8)    # отставленных поездов (на дороге)
+        # «Наличие вагонов на 18:00» = вагоны НАЗНАЧЕНИЕМ на припортовые станции,
+        # а НЕ вагоны на самой станции. wagons_total/road имена сохранены (на них
+        # завязан view v_ports_network) — смысл уточнён в комментариях колонок.
+        wagons_total = g(4)    # наличие на СЕТИ назнач.→порты, факт
+        wagons_road  = g(7)    # наличие на ДОРОГЕ назнач.→порты, факт
+        wagons_dest_net_norm  = g(3)   # на СЕТИ назнач.→порты, НОРМА
+        wagons_dest_road_norm = g(6)   # на ДОРОГЕ назнач.→порты, НОРМА
+        wagons_at_station_18 = g(9)    # НАЛИЧ. НА САМОЙ СТАНЦИИ на 18:00 (это «вагоны на станции»)
+        wagons_at_station_06 = g(14)   # НАЛИЧ. НА САМОЙ СТАНЦИИ на 06:00 след. суток
+        detained     = g(5)    # отставленных поездов (сеть, назнач.→порты)
+        detained_road= g(8)    # отставленных поездов (на дороге назнач.)
+        unload_06    = g(13)   # выгрузка на 06:00 след. суток
         unload_plan_next = g(15)  # план выгрузки на 18:00 следующих суток
 
         if load_fact is None and capacity is None and wagons_total is None:
@@ -379,8 +403,13 @@ def parse_port_stations(path, report_date, road_code):
             load_avg=load_avg, unload_avg=unload_avg,
             wagons_total=int(wagons_total) if wagons_total else None,
             wagons_road=int(wagons_road) if wagons_road else None,
+            wagons_dest_net_norm=int(wagons_dest_net_norm) if wagons_dest_net_norm else None,
+            wagons_dest_road_norm=int(wagons_dest_road_norm) if wagons_dest_road_norm else None,
+            wagons_at_station_18=int(wagons_at_station_18) if wagons_at_station_18 else None,
+            wagons_at_station_06=int(wagons_at_station_06) if wagons_at_station_06 else None,
             detained_trains=int(detained) if detained else None,
             detained_trains_road=int(detained_road) if detained_road else None,
+            unload_06=unload_06,
             unload_plan_next=unload_plan_next,
         ))
     return records
@@ -456,12 +485,12 @@ def write_delays(conn, records):
 
 def write_failures(conn, records):
     sql = """INSERT INTO spravki_failures
-             (report_date,dept,failures_2025,failures_2026,change_pct,resolved,registered,investigated,
+             (report_date,dept,section,failures_2025,failures_2026,change_pct,resolved,registered,investigated,
               duration_2025,duration_2026,duration_change_pct,freight_trains_delayed,freight_train_hours)
-             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     with conn.cursor() as cur:
         for r in records:
-            cur.execute(sql, (r['report_date'],r['dept'],r['failures_2025'],r['failures_2026'],
+            cur.execute(sql, (r['report_date'],r['dept'],r.get('section'),r['failures_2025'],r['failures_2026'],
                               r['change_pct'],r['resolved'],r['registered'],r['investigated'],
                               r.get('duration_2025'),r.get('duration_2026'),r.get('duration_change_pct'),
                               r.get('freight_trains_delayed'),r.get('freight_train_hours')))
@@ -484,15 +513,20 @@ def write_port_stations(conn, records):
     sql = """INSERT INTO spravki_port_stations
              (report_date,road,station,row_level,load_total,load_fact,capacity,
               load_avg,unload_avg,wagons_total,wagons_road,detained_trains,
-              detained_trains_road,unload_plan_next)
-             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+              detained_trains_road,unload_plan_next,
+              wagons_dest_net_norm,wagons_dest_road_norm,
+              wagons_at_station_18,wagons_at_station_06,unload_06)
+             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     with conn.cursor() as cur:
         for r in records:
             cur.execute(sql, (r['report_date'],r['road'],r['station'],r.get('row_level'),
                               r['load_total'],r['load_fact'],r['capacity'],
                               r.get('load_avg'),r.get('unload_avg'),r['wagons_total'],
                               r['wagons_road'],r['detained_trains'],
-                              r.get('detained_trains_road'),r.get('unload_plan_next')))
+                              r.get('detained_trains_road'),r.get('unload_plan_next'),
+                              r.get('wagons_dest_net_norm'),r.get('wagons_dest_road_norm'),
+                              r.get('wagons_at_station_18'),r.get('wagons_at_station_06'),
+                              r.get('unload_06')))
 
 
 def write_speed(conn, records):
