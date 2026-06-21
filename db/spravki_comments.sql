@@ -25,11 +25,11 @@ COMMENT ON COLUMN spravki_failures.change_pct IS 'Изменение числа 
 COMMENT ON COLUMN spravki_failures.resolved IS 'Число устранённых отказов.';
 COMMENT ON COLUMN spravki_failures.registered IS 'Число зарегистрированных отказов.';
 COMMENT ON COLUMN spravki_failures.investigated IS 'Число расследованных отказов.';
-COMMENT ON COLUMN spravki_failures.duration_2025 IS 'Суммарная продолжительность отказов за прошлый год, ч.';
-COMMENT ON COLUMN spravki_failures.duration_2026 IS 'Суммарная продолжительность отказов в текущем периоде, ч.';
+COMMENT ON COLUMN spravki_failures.duration_2025 IS 'Длительность самих ОТКАЗОВ за прошлый год, ч (как долго оборудование было неисправно). НЕ задержка поездов.';
+COMMENT ON COLUMN spravki_failures.duration_2026 IS 'Длительность самих ОТКАЗОВ в текущем периоде, ч (как долго оборудование было неисправно). ЭТО НЕ задержка поездов — для «задержки грузовых поездов в поездо-часах» бери freight_train_hours.';
 COMMENT ON COLUMN spravki_failures.duration_change_pct IS 'Изменение суммарной продолжительности отказов к прошлому году, %.';
-COMMENT ON COLUMN spravki_failures.freight_trains_delayed IS 'Количество грузовых поездов, задержанных из-за отказов, ед.';
-COMMENT ON COLUMN spravki_failures.freight_train_hours IS 'Суммарная продолжительность задержки грузовых поездов из-за отказов, поездо-часов.';
+COMMENT ON COLUMN spravki_failures.freight_trains_delayed IS 'Количество грузовых ПОЕЗДОВ, задержанных из-за отказов, ед.';
+COMMENT ON COLUMN spravki_failures.freight_train_hours IS 'ЗАДЕРЖКА ГРУЗОВЫХ ПОЕЗДОВ из-за отказов, ПОЕЗДО-ЧАСЫ. Для вопроса «какие дороги допустили наибольшую ЗАДЕРЖКУ грузовых поездов / поездо-часов» сортируй ПО ЭТОЙ колонке (НЕ по duration_2026, та — длительность самих отказов).';
 
 -- ===================== spravki_port_stations =====================
 -- Иерархия в одной таблице через row_level.
