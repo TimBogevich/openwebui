@@ -623,6 +623,57 @@ def ingest_dir(dirpath, report_date_str, force=False):
             else:
                 print(f"  [speed:{stype}] not found — skip")
 
+        # ── сортировочные станции xlsb (отдельный парсер parse_sort_stations) ──
+        # Раньше это была РУЧНАЯ операция (parse_sort_stations.py запускали отдельно),
+        # из-за чего для новых дат таблица молча оставалась пустой. Теперь встроено.
+        f = _find(dirpath, 'сортировочн', exts=['.xlsb'])
+        if f:
+            try:
+                import parse_sort_stations as PSS
+                recs = PSS.parse(f, report_date_str)
+                _delete_date(conn, 'spravki_sort_stations', report_date)
+                with conn.cursor() as cur:
+                    for r in recs:
+                        cur.execute(
+                            "INSERT INTO spravki_sort_stations "
+                            "(report_date, road, station, period, working_park, rosp_total, "
+                            " arrived_trains, refused_trains, rosp_no_pere, formed_trains, "
+                            " sent_trains, avg_weight, avg_length, park_norm, "
+                            " idle_transit_pere, idle_transit_pere_norm, "
+                            " idle_transit_nopere, idle_transit_nopere_norm, raw_extra) "
+                            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
+                            (r["report_date"], r["road"], r["station"], r["period"],
+                             r.get("working_park"), r.get("rosp_total"),
+                             r.get("arrived_trains"), r.get("refused_trains"),
+                             r.get("rosp_no_pere"), r.get("formed_trains"),
+                             r.get("sent_trains"), r.get("avg_weight"),
+                             r.get("avg_length"), r.get("park_norm"),
+                             r.get("idle_transit_pere"), r.get("idle_transit_pere_norm"),
+                             r.get("idle_transit_nopere"), r.get("idle_transit_nopere_norm"),
+                             r.get("raw_extra")))
+                print(f"  [sort_stations] {os.path.basename(f)}\n    → {len(recs)} rows")
+            except Exception as e:
+                print(f"  [sort_stations] FAILED: {e} — skip (не ломает остальное)")
+        else:
+            print("  [sort_stations] not found — skip")
+
+        # ── ограничения скорости ──
+        # ВНИМАНИЕ: исходный xlsx хранит данные КАРТИНКОЙ (PNG), автопарсера нет.
+        # Данные грузятся вручную через load_speed_restrictions.py из JSON. Здесь
+        # только предупреждаем, чтобы для новой даты не забыли (молчаливый пропуск = баг).
+        f = _find(dirpath, 'ограничени', exts=['.xlsx'])
+        if f:
+            have = False
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1 FROM spravki_speed_restrictions WHERE report_date=%s LIMIT 1",(report_date,))
+                have = cur.fetchone() is not None
+            if not have:
+                print(f"  [speed_restrictions] ВНИМАНИЕ: файл есть, но данных за {report_date_str} "
+                      f"в БД НЕТ. Источник — картинка (PNG) в xlsx; загрузи вручную через "
+                      f"load_speed_restrictions.py (JSON). Иначе вопросы об ограничениях вернут «нет данных».")
+            else:
+                print(f"  [speed_restrictions] данные за {report_date_str} уже загружены (JSON-loader)")
+
         conn.commit()
         print(f"\n  [OK] ingest complete for {report_date_str}")
     except Exception as e:
