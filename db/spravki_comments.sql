@@ -81,10 +81,10 @@ COMMENT ON COLUMN spravki_locomotives.polygon IS 'Тяговый полигон.
 COMMENT ON COLUMN spravki_locomotives.road IS 'В строках polygon IS NULL — название тягового полигона (итог по полигону). В строках polygon IS NOT NULL — код дороги внутри полигона (В-СИБ, ДВОСТ, ЗАБ …); полное имя в road_codes.';
 COMMENT ON COLUMN spravki_locomotives.plan IS 'План парка в грузовом виде движения, ед. (операционный парк, по типу тяги).';
 COMMENT ON COLUMN spravki_locomotives.fact IS 'Факт парка в грузовом виде движения, ед. (операционный парк, по типу тяги).';
-COMMENT ON COLUMN spravki_locomotives.delta IS 'Отклонение fact − plan в грузовом виде движения, ед. Отрицательное — дефицит.';
-COMMENT ON COLUMN spravki_locomotives.plan_total IS 'План парка по всем видам движения (грузовое + резерв + прочее), ед.';
+COMMENT ON COLUMN spravki_locomotives.delta IS 'Отклонение fact − plan в ГРУЗОВОМ виде движения, ед. Отрицательное — дефицит. ДЛЯ ВОПРОСА О НЕДОСОДЕРЖАНИИ ПАРКА бери ЭТУ колонку (НЕ delta_total). Для итога по полигону суммируй delta по строкам polygon IS NULL.';
+COMMENT ON COLUMN spravki_locomotives.plan_total IS 'План парка по ВСЕМ видам движения (грузовое + резерв + прочее), ед. НЕ для вопроса о недосодержании в грузовом движении.';
 COMMENT ON COLUMN spravki_locomotives.fact_total IS 'Факт парка по всем видам движения, ед.';
-COMMENT ON COLUMN spravki_locomotives.delta_total IS 'Отклонение fact_total − plan_total, ед.';
+COMMENT ON COLUMN spravki_locomotives.delta_total IS 'Отклонение fact_total − plan_total по ВСЕМУ парку, ед. НЕ путать с delta (грузовое движение). Для недосодержания в грузовом движении используй delta.';
 COMMENT ON COLUMN spravki_locomotives.reserve IS 'Локомотивы в резерве, ед.';
 
 -- ===================== spravki_sort_stations =====================

@@ -110,9 +110,19 @@ ALTER TABLE spravki_locomotives ADD COLUMN IF NOT EXISTS delta_total int;
 ALTER TABLE spravki_locomotives ADD COLUMN IF NOT EXISTS reserve int;
 COMMENT ON TABLE spravki_locomotives IS
   'Эксплуатируемый парк локомотивов по полигонам/дорогам и ТИПАМ ТЯГИ (section: '
-  'AC=переменный ток, DC=постоянный, diesel=тепловозы). plan/fact/delta — ГРУЗОВОЕ '
-  'движение; plan_total/fact_total — ВЕСЬ эксплуатируемый парк; reserve — Резерв. '
-  'Каждая дорога имеет до 3 строк (по одному на тип тяги). Источник справок к ГЦУ '
+  'AC=переменный ток, DC=постоянный, diesel=тепловозы). '
+  'ДВА УРОВНЯ СТРОК: (1) ИТОГ ПО ПОЛИГОНУ — polygon IS NULL, road = название полигона '
+  '(Северо-Западный/Восточный/Юго-Западный/Московский/Октябрьский); (2) ДЕТАЛЬ ПО ДОРОГЕ — '
+  'polygon = название полигона, road = код дороги внутри него. '
+  'ДВЕ ПАРЫ ЧИСЕЛ — НЕ ПУТАЙ: plan/fact/DELTA = ГРУЗОВОЕ движение (для вопросов о '
+  'недосодержании парка В ГРУЗОВОМ ДВИЖЕНИИ бери delta); plan_total/fact_total/delta_total = '
+  'ВЕСЬ эксплуатируемый парк (грузовое+резерв+прочее) — НЕ для вопроса о недосодержании. '
+  'РЕЦЕПТ «недосодержание по полигонам»: бери ТОЛЬКО строки-итоги (polygon IS NULL), '
+  'суммируй delta по road (полигону): SELECT road, SUM(delta) FROM spravki_locomotives '
+  'WHERE report_date=... AND polygon IS NULL GROUP BY road HAVING SUM(delta)<0. '
+  'Это даёт верные С-Западный −171, Восточный −40 (НЕ −107: то ошибка от delta_total и от '
+  'группировки по polygon, которая отбрасывает строки-итоги с polygon IS NULL). '
+  'Каждый уровень имеет до 3 строк (по типу тяги). reserve — Резерв. Источник справок к ГЦУ '
   '(АРМ ОНД). Связывается с metrics по report_date.';
 
 -- ---------------------------------------------------------------------------
