@@ -137,6 +137,30 @@ _DESCRIBE_BLOCK_AT = 6
 _query_calls = [0]
 _QVOL_WARN = 6    # after the 6th query in a question, start nudging (soft only)
 
+# GLOBAL exploration budget across ALL tools (describe + find_indicator + query).
+# Re-added 2026-06-21 after the §12.6 fix was reverted (bd0fb3e) and EMPTY/over-
+# exploration regressed (32-Q live regression: 3 EMPTY from wandering to the turn-cap).
+# CRITICAL — learns from why bd0fb3e reverted: (1) it accumulated across questions
+# because there was no production reset → bricked later questions' FIRST call. NOW it
+# rides on _maybe_new_question() (40s-idle TTL reset) which DID NOT EXIST then, so it
+# self-clears between questions. (2) it WITHHELD data (returned ⛔ instead of the result),
+# cutting off legit multi-source questions. NOW it NEVER withholds — it only APPENDS an
+# "answer now" instruction to the still-fully-returned data. So the model always gets its
+# rows AND a strong nudge to stop. Threshold is high enough for expert multi-source
+# questions (which legitimately need describe + find + a query per spravki table).
+_tool_calls = [0]
+_TOOL_BUDGET = 10   # total describe+find+query before the firm "answer now" appendix
+_BUDGET_MSG = ("\n\n⚠️ ДОСТАТОЧНО ДАННЫХ: сделано много обращений к БД по этому вопросу. "
+    "Нужные данные уже среди полученных результатов. СФОРМИРУЙ ОТВЕТ СЕЙЧАС на их основе — "
+    "не вызывай больше describe/find_indicator/query. Если какого-то одного числа не "
+    "хватает — дай ответ по имеющимся данным и укажи, чего недостаёт.")
+
+def _budget_note():
+    """Increment the global tool budget; return the 'answer now' appendix once the
+    budget is exceeded, else ''. NEVER blocks/withholds — caller appends to real data."""
+    _tool_calls[0] += 1
+    return _BUDGET_MSG if _tool_calls[0] > _TOOL_BUDGET else ""
+
 # --- Per-question boundary detection --------------------------------------
 # Every counter here is GLOBAL module state. The test harness reset them by hand
 # between questions, but real Open WebUI has no such hook, so without this they
@@ -160,6 +184,7 @@ def _maybe_new_question():
         _describe_calls[0] = 0
         _find_calls[0] = 0
         _consec_zero[0] = 0
+        _tool_calls[0] = 0
         _recent_q.clear()
 
 
@@ -375,7 +400,7 @@ def describe(table: str = "") -> str:
                         # never let one column's profiling abort the whole description
                         conn.rollback()
                         continue
-                return "\n".join(out)
+                return "\n".join(out) + _budget_note()
     except Exception as e:
         return f"Ошибка: {e}"
 
@@ -422,7 +447,9 @@ def query(sql: str) -> str:
                "Переходи к ответу.\n\n" + out)
     elif _query_calls[0] >= _QVOL_WARN:
         out = ("Сделано несколько запросов — данных, вероятно, достаточно для ответа.\n\n" + out)
-    return out
+    # Global budget appendix: data is ALWAYS returned; we only append a firm
+    # "answer now" once total tool calls exceed the budget (never withholds).
+    return out + _budget_note()
 
 
 # ---------------------------------------------------------------------------
@@ -532,7 +559,7 @@ def find_indicator(query: str, k: int = 5) -> str:
         out.append(f"    name = «{name}»")
     out.append("")
     out.append("Для SQL используй name = '...' (вместо ILIKE / %).")
-    return "\n".join(out)
+    return "\n".join(out) + _budget_note()
 
 
 _WDAY_RU = ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"]
