@@ -1,0 +1,472 @@
+[
+ {
+  "i": 1,
+  "q": "Проанализируй выполнение показателя «Доля грузовых отправок в груженых вагонах, доставленных в срок» по состоянию на 12 марта 2026 года. Представь результаты.",
+  "verdict": "FAIL",
+  "sec": 31.5,
+  "nq": 5,
+  "sqls": [
+   "SELECT m.day_fact, m.month_fact, m.year_fact, m.day_to_plan, m.month_to_plan, m.year_to_plan, r.report_date FROM metrics m JOIN reports r ON m.report_id = r.id ",
+   "SELECT m.day_fact, m.month_fact, m.year_fact, m.day_to_plan, m.month_to_plan, m.year_to_plan, COALESCE(m.zone_day, m.zone_month, m.zone_year) as zone_label FROM",
+   "SELECT m.day_fact, m.month_fact, m.year_fact, m.day_to_plan, m.month_to_plan, m.year_to_plan, m.zone_label FROM metrics m JOIN reports r ON m.report_id = r.id W",
+   "SELECT column_name FROM information_schema.columns WHERE table_name = 'metrics' AND column_name LIKE '%prev%' OR column_name LIKE '%прош%' ORDER BY ordinal_posi",
+   "SELECT m.day_fact, m.month_fact, m.year_fact, m.day_to_plan, m.month_to_plan, m.year_to_plan, m.day_to_prev_year, m.month_to_prev_yr, m.year_to_prev_yr FROM met"
+  ],
+  "ans": "\n\nПо состоянию на 12 марта 2026 года показатель «Доля груз. отправок в груж. вагонах с собл. установл. срока доставки» находится в красной зоне риска (источник — таблица metrics).\n\nВ отчётные сутки факт составил 96,53 %, что на 2,47 п.п. ниже плана и на 0,73 п.п. ниже показателя прошлого года.\nС начала месяца показатель равен 95,84 % (отклонение от плана минус 3,16 п.п., к прошлому году минус 1,42 п.п.).\nС начала года факт составляет 98,15 % (отклонение от плана минус 0,85 п.п., к прошлому году плюс 1,95 п.п.).",
+  "err": null
+ },
+ {
+  "i": 2,
+  "q": "Какие основные причины, повлияли на невыполнение данного показателя. Какие факторы (причины) оказали наибольшее влияние на снижение уровня своевременной доставки грузов. Приведи цифры",
+  "verdict": "EMPTY",
+  "sec": 72.4,
+  "nq": 14,
+  "sqls": [
+   "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;",
+   "SELECT report_id, report_date FROM reports ORDER BY report_date DESC LIMIT 1;",
+   "SELECT id, report_date FROM reports ORDER BY report_date DESC LIMIT 1;",
+   "SELECT * FROM metrics WHERE report_id = 'ab94680a-ec41-4741-ad68-3c0dee51fe00' AND metric_name LIKE '%срок доставки%' LIMIT 1;",
+   "SELECT * FROM metrics WHERE report_id = 'ab94680a-ec41-4741-ad68-3c0dee51fe00' LIMIT 1;",
+   "SELECT name, day_fact, month_fact, year_fact, zone_label FROM metrics WHERE report_id = 'ab94680a-ec41-4741-ad68-3c0dee51fe00' AND name LIKE '%срок доставки%';",
+   "SELECT commentary FROM report_comments WHERE report_id = 'ab94680a-ec41-4741-ad68-3c0dee51fe00' AND indicator_number LIKE '%срок%';",
+   "SELECT name FROM metrics WHERE report_id = 'ab94680a-ec41-4741-ad68-3c0dee51fe00' AND (name LIKE '%срок%' OR name LIKE '%доставки%');",
+   "SELECT delay_name, trains, wagons FROM spravki_delays WHERE report_date = '2026-03-12' AND road_code = 'СЕТЬ' AND delay_code != 'ВСЕГО' ORDER BY trains DESC LIM",
+   "SELECT name FROM indicator_index WHERE name LIKE '%срок%';",
+   "SELECT * FROM metrics WHERE report_id = 'ab94680a-ec41-4741-ad68-3c0dee51fe00' AND indicator_number = '2.1';",
+   "SELECT commentary FROM report_comments WHERE report_id = 'ab94680a-ec41-4741-ad68-3c0dee51fe00' LIMIT 5;",
+   "SELECT commentary FROM report_comments WHERE report_id = 'ab94680a-ec41-4741-ad68-3c0dee51fe00' AND metric_id = 'b56cdbf9-08b4-462e-adfc-6375b67707ff';",
+   "SELECT d.delay_name, d.trains, d.wagons, r.responsibility FROM spravki_delays d JOIN delay_reason_codes r ON d.delay_code = r.delay_code WHERE d.report_date = '"
+  ],
+  "ans": null,
+  "err": null
+ },
+ {
+  "i": 3,
+  "q": "Проанализируй выполнение средней участковой скорости движения поездов. Представь конкретные цифры.",
+  "verdict": "FAIL",
+  "sec": 15.7,
+  "nq": 1,
+  "sqls": [
+   "SELECT road, day_fact, day_delta, month_fact, month_delta, year_delta FROM spravki_speed WHERE report_date = '2026-03-12' AND speed_type = 'section' ORDER BY CA"
+  ],
+  "ans": "\n\n## Анализ выполнения средней участковой скорости движения поездов\n\n**ИСТОЧНИК ДАННЫХ:** spravki_speed (справка о скоростных показателях по дорогам)\n\n### В отчётные сутки 12 марта 2026 года\n\nСредняя участковая скорость по сети составила **38,0 км/ч**, что на **0,2 п.п.** ниже норматива (отклонение — минус 0,2). К аналогичному периоду прошлого года снижение составило **0,8 п.п.**\n\n**По отдельным дорогам:**\n- Наименьшее отставание от нормы наблюдается на **Дальневосточной** дороге: факт за сутки — **34,7 км/ч** (+0,1 к норме), с начала месяца — **35,1 км/ч** (+0,5), к прошлому году — **+0,8 п.п.** (зелёная зона по всем трём периодам).\n- На **Октябрьской** дороге: факт за сутки — **40,0 км/ч** (+0,8), с начала месяца — **40,0 км/ч** (+0,8), к прошлому году — **+4,4 п.п.** (зелёная зона).\n- На **Северной** дороге: факт за сутки — **43,0 км/ч** (+1,0), с начала месяца — **42,0 км/ч** (нулевое отклонение), к прошлому году — **+2,8 п.п.** (зелёная зона).\n\n**Дороги в красной зоне риска** (отрицательное отклонение хотя бы по одному из трёх периодов):\n- **Свердловская**: факт за сутки — **31,1 км/ч** (-4,8 к норме), с начала месяца — **32,3 км/ч** (-3,6), к прошлому году — **-4,9 п.п.** (красная зона по всем трём периодам).\n- **Западно-Сибирская**: факт за сутки — **44,8 км/ч** (-2,1), с начала месяца — **46,4 км/ч** (-0,5), к прошлому году — **-0,2 п.п.** (красная зона).\n- **Московская**: факт за сутки — **40,2 км/ч** (+2,2), с начала месяца — **35,7 км/ч** (-2,3), к прошлому году — **-7,6 п.п.** (красная зона по двум периодам).\n- **Куйбышевская**: факт за сутки — **40,3 км/ч** (-0,7), с начала месяца — **40,7 км/ч** (-0,3), к прошлому году — **-3,3 п.п.** (красная зона по всем трём периодам).\n- **Красноярская**: факт за сутки — **35,0 км/ч** (-1,1), с начала месяца — **36,6 км/ч** (+0,5), к прошлому году — **-3,8 п.п.** (красная зона по двум периодам).\n- **Горьковская**: факт за сутки — **36,4 км/ч** (-0,8), с начала месяца — **37,7 км/ч** (+0,5), к прошлому году — **-4,7 п.п.** (красная зона по двум периодам).\n\n### С начала месяца\n\nНакопительный итог по сети составил **38,1 км/ч**, что на **0,1 п.п.** ниже норматива и на **0,8 п.п.** ниже показателя прошлого года (красная зона риска).\n\n**Лучшие показатели с начала месяца:**\n- **Октябрьская**: **40,0 км/ч** (+0,8 к норме, +4,4 к прошлому году).\n- **Приволжская**: **38,7 км/ч** (+1,8 к норме, -1,7 к прошлому году).\n- **Восточно-Сибирская**: **36,0 км/ч** (+1,4 к норме, -0,8 к прошлому году).\n\n### Факторы, влияющие на показатель\n\nСогласно нормативным документам, на среднюю участковую скорость влияют: состояние инфраструктуры, ограничения скорости, окна для ремонта инфраструктуры, пропускная способность участков и погодные условия.\n\n**ИТОГО:** Показатель средней участковой скорости движения поездов по сети ОАО «РЖД» находится в **красной зоне риска** по всем трём периодам (сутки, с начала месяца, к прошлому году). Наиболее критичная ситуация на Свердловской, Западно-Сибирской и Куйбышевской дорогах.",
+  "err": null
+ },
+ {
+  "i": 4,
+  "q": "Какие железные дороги допустили наибольшее негативное отступление от плановых параметров за отчетные сутки и с начала месяца",
+  "verdict": "EMPTY",
+  "sec": 35.8,
+  "nq": 4,
+  "sqls": [
+   "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND (table_name LIKE '%kpi%' OR table_name LIKE '%plan%' OR table_name LIKE '%ots",
+   "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name LIMIT 30;",
+   "SELECT column_name FROM information_schema.columns WHERE table_name = 'metrics' ORDER BY ordinal_position;",
+   "SELECT DISTINCT name FROM metrics WHERE name ILIKE '%отступление%' OR name ILIKE '%плановый параметр%' LIMIT 10;"
+  ],
+  "ans": null,
+  "err": null
+ },
+ {
+  "i": 5,
+  "q": "Опиши основные причины невыполнения участковой скорости",
+  "verdict": "EMPTY",
+  "sec": 24.1,
+  "nq": 3,
+  "sqls": [
+   "SELECT road, day_fact, norm, day_delta FROM spravki_speed WHERE report_date = '2026-03-12' AND speed_type = 'section' AND road = 'СЕТЬ'",
+   "SELECT delay_name, trains FROM spravki_delays WHERE report_date = '2026-03-12' AND road_code = 'СЕТЬ' AND delay_code != 'ВСЕГО' ORDER BY trains DESC LIMIT 5",
+   "SELECT dept, failures_2026, change_pct FROM spravki_failures WHERE report_date = '2026-03-12' AND dept ILIKE '%Всего по сети%'"
+  ],
+  "ans": null,
+  "err": null
+ },
+ {
+  "i": 6,
+  "q": "Проанализируй работу припортовых станций.",
+  "verdict": "ANS",
+  "sec": 30.6,
+  "nq": 6,
+  "sqls": [
+   "SELECT      report_date,     road,     station,     load_fact,     capacity,     wagons_at_station_18,     wagons_total FROM spravki_port_stations WHERE report_",
+   "SELECT DISTINCT report_date FROM spravki_port_stations ORDER BY report_date DESC LIMIT 5;",
+   "SELECT      report_date,     road,     station,     load_fact,     capacity,     wagons_at_station_18,     wagons_total FROM spravki_port_stations WHERE report_",
+   "SELECT * FROM spravki_port_stations WHERE report_date = '2026-03-12' AND station = 'ИТОГО ПО ПОРТАМ СЕТИ';",
+   "SELECT      road,     station,     load_fact,     capacity,     wagons_at_station_18 FROM spravki_port_stations WHERE report_date = '2026-03-12' AND station != ",
+   "SELECT      road,     station,     load_fact,     capacity,     ROUND((load_fact / NULLIF(capacity, 0)) * 100, 1) as utilization_pct FROM spravki_port_stations "
+  ],
+  "ans": "\n\n**Анализ работы припортовых станций**\n\n**Отчетный период:** 12 марта 2026 года (последние доступные данные в базе).\n\n**Ситуация на сети:**\nВ отчетные сутки выгрузка на припортовые станции составила **17 119 вагонов** против перерабатывающей способности портов в **31 271 вагон**. Коэффициент использования мощности составил **54,8%**. Фактическая выгрузка превысила плановый показатель на следующие сутки (16 000 вагонов) на 1 119 вагонов.\n\n**Вагонный парк:**\nНаблюдается избыточное наличие вагонов назначением на припортовые станции по сети: фактическое наличие составляет **148 263 вагона**, что превышает норматив (131 814 вагонов) на **16 449 вагонов**. На самих станциях (на 18:00) сосредоточено **19 395 вагонов**.\n\n**Ключевые станции по объему выгрузки:**\nЛидерами по суточной выгрузке являются следующие станции:\n*   **Октябрьская** (Октябрьская ж.д.): выгружено **6 768 вагонов** при пропускной способности 10 852 вагона (использование — 62,4%).\n*   **Дальневосточная** (Дальневосточная ж.д.): выгружено **6 176 вагонов** при пропускной способности 9 601 вагон (использование — 64,3%).\n*   **Лужская** (Октябрьская ж.д.): выгружено **4 299 вагонов** при пропускной способности 6 332 вагона (использование — 67,9%).\n*   **Северо-Кавказская** (Северо-Кавказская ж.д.): выгружено **4 057 вагонов** при пропускной способности 9 700 вагонов (использование — 41,8%).\n\n*(Источник данных: справки о работе припортовых станций)*",
+  "err": null
+ },
+ {
+  "i": 7,
+  "q": "Проанализируй количество отставленных поездов  (всего на сети ж.д.) назначением на припортовые станции.",
+  "verdict": "EMPTY",
+  "sec": 27.4,
+  "nq": 9,
+  "sqls": [
+   "SELECT * FROM spravki_port_stations WHERE report_date = '2026-03-12' AND station = 'ИТОГО ПО ПОРТАМ СЕТИ';",
+   "SELECT report_date, detained_trains FROM spravki_port_stations WHERE station = 'ИТОГО ПО ПОРТАМ СЕТИ' AND report_date >= '2026-03-01' ORDER BY report_date;",
+   "SELECT road, detained_trains FROM spravki_port_stations WHERE report_date = '2026-03-12' AND station != 'ИТОГО ПО ПОРТАМ СЕТИ';",
+   "SELECT road, station, detained_trains FROM spravki_port_stations WHERE report_date = '2026-03-12' AND (road = 'ОКТ' OR road = 'СКАВ') ORDER BY road, detained_tr",
+   "SELECT road, station, detained_trains FROM spravki_port_stations WHERE report_date = '2026-03-12' AND (station LIKE '%ОКТ%' OR station LIKE '%СКАВ%') ORDER BY d",
+   "SELECT road, station, detained_trains FROM spravki_port_stations WHERE report_date = '2026-03-12' AND road = 'СКАВ';",
+   "SELECT road, station, detained_trains FROM spravki_port_stations WHERE report_date = '2026-03-12' AND station IN ('ДВОСТ', 'ОКТ', 'СКАВ');",
+   "SELECT station, detained_trains FROM spravki_port_stations WHERE report_date = '2026-03-12' AND road = 'ДВОСТ' AND detained_trains IS NOT NULL AND detained_trai",
+   "SELECT station, detained_trains FROM spravki_port_stations WHERE report_date = '2026-03-12' AND road = 'ДВОСТ' AND detained_trains > 0 ORDER BY detained_trains "
+  ],
+  "ans": null,
+  "err": null
+ },
+ {
+  "i": 8,
+  "q": "Проанализируй наличие вагонов на сети назначением на припортовые станции на 18-00 отчетных суток.",
+  "verdict": "PASS",
+  "sec": 62.2,
+  "nq": 6,
+  "sqls": [
+   "SELECT road, station, wagons_total, wagons_dest_net_norm FROM spravki_port_stations WHERE report_date = '2026-06-20' ORDER BY road, station",
+   "SELECT DISTINCT report_date FROM spravki_port_stations ORDER BY report_date DESC LIMIT 5",
+   "SELECT road, station, wagons_total, wagons_dest_net_norm FROM spravki_port_stations WHERE report_date = (SELECT MAX(report_date) FROM spravki_port_stations) ORD",
+   "SELECT DISTINCT road FROM spravki_port_stations ORDER BY road",
+   "SELECT road, station, wagons_total FROM spravki_port_stations WHERE report_date = '2026-03-12' AND road IN ('ОКТ', 'СКАВ') ORDER BY road, station",
+   "SELECT road, station, wagons_total, wagons_dest_net_norm FROM spravki_port_stations WHERE station = 'ИТОГО ПО ПОРТАМ СЕТИ' ORDER BY report_date DESC LIMIT 5"
+  ],
+  "ans": "\n\n**Анализ наличия вагонов на сети назначением на припортовые станции (на 18:00 отчетных суток)**\n\nПо последним имеющимся в системе данным за **12 марта 2026 года**:\n\n*   **Наличие вагонов на сети назначением на припортовые станции:** 148 263 ед.\n*   **Плановая норма:** 131 814 ед.\n*   **Отклонение от нормы:** +16 449 ед. (+12,5%).\n\nНаблюдается превышение плановой нагрузки на припортовые станции (накопление вагонов в пути следования к портам).\n\n**ИСТОЧНИК ДЛЯ ОТВЕТА:** Справки к ГЦУ.\n\n*Примечание: Данные за текущие отчетные сутки (20 июня 2026 г.) в системе отсутствуют.*",
+  "err": null
+ },
+ {
+  "i": 9,
+  "q": "Проанализируй количество отставленных поездов на дорогах назначения на припортовые станции.",
+  "verdict": "EMPTY",
+  "sec": 42.7,
+  "nq": 0,
+  "sqls": [],
+  "ans": "",
+  "err": null
+ },
+ {
+  "i": 10,
+  "q": "Проанализируй наличие вагонов на дорогах назначения на припортовые станции на 18-00 отчетных суток",
+  "verdict": "FAIL",
+  "sec": 56.5,
+  "nq": 2,
+  "sqls": [
+   "SELECT road, station, wagons_road FROM spravki_port_stations WHERE report_date = '2026-06-20' AND (road IN ('ДВОСТ', 'ОКТ', 'СКАВ') OR station = 'ИТОГО ПО ПОРТА",
+   "SELECT DISTINCT report_date FROM spravki_port_stations ORDER BY report_date DESC LIMIT 5"
+  ],
+  "ans": "\n\nПо запросу о наличии вагонов на дорогах назначения на припортовые станции на 18-00 отчетных суток (20 июня 2026 г.) данных нет.\n\nПоследняя доступная справка в системе датирована 12 марта 2026 г. (таблица `spravki_port_stations`).",
+  "err": null
+ },
+ {
+  "i": 11,
+  "q": "Проанализируй выгрузку вагонов на припортовых станциях по состоянию на 18-00. Сравни с перерабатывающей способностью. Сделай выводы",
+  "verdict": "EMPTY",
+  "sec": 18.6,
+  "nq": 10,
+  "sqls": [
+   "SELECT DISTINCT report_date FROM spravki_port_stations ORDER BY report_date DESC LIMIT 5;",
+   "SELECT station, road, load_fact, capacity, load_total FROM spravki_port_stations WHERE report_date = '2026-03-12' ORDER BY road, station;",
+   "SELECT station, road, load_fact, capacity, load_total FROM spravki_port_stations WHERE report_date = '2026-03-12' AND (station LIKE '%ИТОГО%' OR station NOT IN ",
+   "SELECT DISTINCT road FROM spravki_port_stations WHERE report_date = '2026-03-12';",
+   "SELECT station, road, load_fact, capacity, load_total FROM spravki_port_stations WHERE report_date = '2026-03-12' AND (station LIKE '%ИТОГО%' OR station NOT IN ",
+   "SELECT DISTINCT station, road FROM spravki_port_stations WHERE report_date = '2026-03-12' ORDER BY road, station;",
+   "SELECT station, road, load_fact, capacity, ROUND(COALESCE(load_fact / NULLIF(capacity, 0), 0) * 100, 1) as utilization_pct FROM spravki_port_stations WHERE repo",
+   "SELECT station, road, load_fact, capacity, ROUND(COALESCE(load_fact / NULLIF(capacity, 0), 0) * 100, 1) as utilization_pct FROM spravki_port_stations WHERE repo",
+   "SELECT station, road, load_fact, capacity, ROUND(COALESCE(load_fact / NULLIF(capacity, 0), 0) * 100, 1) as utilization_pct FROM spravki_port_stations WHERE repo",
+   "SELECT station, road, load_fact, capacity FROM spravki_port_stations WHERE report_date = '2026-03-12' AND (station LIKE '%ИТОГО%' OR station IN ('ДАЛЬНЕВОСТОЧНА"
+  ],
+  "ans": null,
+  "err": null
+ },
+ {
+  "i": 12,
+  "q": "Проанализируй использование перерабатывающей способности припортовых станций по состоянию на 18-00 и 6-00 отчетных суток",
+  "verdict": "EMPTY",
+  "sec": 32.6,
+  "nq": 9,
+  "sqls": [
+   "SELECT road, station, load_fact, capacity, wagons_at_station_18, wagons_at_station_06, detain  FROM spravki_port_stations  WHERE report_date = '2026-06-20' AND ",
+   "SELECT road, station, load_fact, capacity, wagons_at_station_18, wagons_at_station_06  FROM spravki_port_stations  WHERE report_date = '2026-06-20' AND station ",
+   "SELECT DISTINCT report_date FROM spravki_port_stations ORDER BY report_date DESC LIMIT 5;",
+   "SELECT road, station, load_fact, capacity, wagons_at_station_18, wagons_at_station_06  FROM spravki_port_stations  WHERE report_date = '2026-03-12' AND station ",
+   "SELECT road, station, SUM(load_fact) as total_load_fact, SUM(capacity) as total_capacity  FROM spravki_port_stations  WHERE report_date = '2026-03-12' AND stati",
+   "SELECT road, station, load_fact, capacity, wagons_at_station_18, wagons_at_station_06  FROM spravki_port_stations  WHERE report_date = '2026-03-12' AND station ",
+   "SELECT road, SUM(load_fact) as total_load, SUM(capacity) as total_cap  FROM spravki_port_stations  WHERE report_date = '2026-03-12' AND station NOT LIKE '%ИТОГО",
+   "SELECT road, station, load_fact, capacity, wagons_at_station_18  FROM spravki_port_stations  WHERE report_date = '2026-03-12' AND station NOT LIKE '%ИТОГО%' AND",
+   "SELECT road, station, load_fact, capacity, ROUND(load_fact/capacity*100, 1) as coeff  FROM spravki_port_stations  WHERE report_date = '2026-03-12' AND station N"
+  ],
+  "ans": null,
+  "err": null
+ },
+ {
+  "i": 13,
+  "q": "Проанализируй работу важнейших сортировочных станций.",
+  "verdict": "ANS",
+  "sec": 57.9,
+  "nq": 1,
+  "sqls": [
+   "WITH latest_date AS (SELECT MAX(report_date) as d FROM spravki_sort_stations WHERE period = 'сут.') SELECT      s.road,      s.station,      s.working_park,    "
+  ],
+  "ans": "\n\n**Анализ работы важнейших сортировочных станций сети ОАО «РЖД»**\n\nПо данным на последние сутки (период «сут.») зафиксировано превышение нормативов рабочего парка вагонов на большинстве рассматриваемых станций, что свидетельствует о перегрузке узлов и необходимости усиления работы по ускорению оборота вагона.\n\n**Ключевые показатели:**\n*   **Рабочий парк:** Фактическое наличие превышает нормативы на всех проанализированных станциях. Максимальное превышение наблюдается на сортировочных станциях **Агрыз** (+1228 ед.), **Хабаровск II** (+1213 ед.) и **Юдино** (+1072 ед.).\n*   **Простой транзитного вагона (с переработкой):** Критическая ситуация на станции **Юдино** — простой составил 56,11 часа при нормативе 19,00 часов (отклонение +37,11 ч). На станции **Агрыз** простой также более чем в два раза превышает норму (35,34 ч против 17,80 ч).\n\n**Детализация по станциям (по убыванию превышения рабочего парка):**\n\n| Дорога | Станция | Рабочий парк (факт) | Норматив | Превышение (ед.) | Простой транзита (ч) | Норма простоя (ч) |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| **Горьковская** | Агрыз | 2861 | 1633 | **+1228** | 35,34 | 17,80 |\n| **Восточно-Сибирская** | Хабаровск II | 5040 | 3827 | **+1213** | 24,44 | 19,50 |\n| **Горьковская** | Юдино | 2794 | 1722 | **+1072** | **56,11** | 19,00 |\n| **Московская** | Брянск-Льгов | 3305 | 2300 | +1005 | 40,09 | 21,40 |\n| **Куйбышевская** | Деми | 3655 | 2650 | +1005 | 37,75 | 13,48 |\n| **Горьковская** | Лянгаcово | 2413 | 1479 | +934 | 25,19 | 17,30 |\n| **Куйбышевская** | Сызрань I | 3183 | 2300 | +883 | 23,68 | 17,00 |\n| **Горьковская** | Н.Новгород-С | 2215 | 1363 | +852 | 25,24 | 18,80 |\n| **Восточно-Сибирская** | Иркутск-Сорт | 4030 | 3210 | +820 | 27,57 | 19,60 |\n| **Свердловская** | Екатеринбург-С | 4692 | 3900 | +792 | 19,93 | 13,50 |\n\n*Примечание: Коды дорог в системе (ГОРЬК, КБШ, С-КАВ) расшифрованы по фактическому расположению станций или стандартным аббревиатурам. Станции Агрыз и Юдино, числящиеся под кодом «ГОРЬК», фактически относятся к инфраструктуре Куйбышевской железной дороги.*\n\n**Ситуация по другим узлам:**\n*   **Свердловская дорога (Пермь-Сорт):** Превышение парка +422 ед., простой транзита 39,49 ч при норме 17,00 ч.\n*   **Западно-Сибирская дорога (Входная, Московская):** Превышения парка составляют +620 и +362 ед. соответственно.\n*   **Южно-Уральская дорога (Оренбург):** Превышение +366 ед., простой транзита 30,78 ч при норме 20,20 ч.\n\n**Вывод:** Ситуация оценивается как напряженная («красная зона» по рабочему парку). Требуется усиление контроля за формированием и отправкой поездов со станций Агрыз, Юдино и Хабаровск II для снижения рабочего парка и сокращения времени простоя вагонов.",
+  "err": null
+ },
+ {
+  "i": 14,
+  "q": "Проанализируй отклонения от норматива простоя транзитного вагона без переработки. Определи 5 станций с наибольшим превышением норматива (в часах и в процентах). Сделай выводы",
+  "verdict": "PASS",
+  "sec": 30.5,
+  "nq": 1,
+  "sqls": [
+   "SELECT    road,   station,   idle_transit_nopere AS fact_hours,   idle_transit_nopere_norm AS norm_hours,   (idle_transit_nopere - idle_transit_nopere_norm) AS "
+  ],
+  "ans": "\n\n**Анализ отклонений от норматива простоя транзитного вагона без переработки**\n\nМониторинг ЦГЦУ осуществляется в ежесуточном режиме. Представлены данные за последние сутки по важнейшим сортировочным станциям сети. В справочнике отражаются суточные показатели; данные за период с начала месяца и года в данном источнике не формируются.\n\n**Топ-5 станций с наибольшим превышением норматива (в часах и процентах):**\n1. Станция ПЕНЗА III (Куйбышевская ж.д.): факт 6,80 ч при норме 3,50 ч. Превышение составляет 3,30 ч (+94,3 п.п.).\n2. Станция АЛТАЙСКАЯ (Западно-Сибирская ж.д.): факт 5,37 ч при норме 2,70 ч. Превышение составляет 2,67 ч (+98,9 п.п.).\n3. Станция СЫЗРАНЬ I (Куйбышевская ж.д.): факт 5,08 ч при норме 3,00 ч. Превышение составляет 2,08 ч (+69,3 п.п.).\n4. Станция КИНЕЛЬ (Куйбышевская ж.д.): факт 4,07 ч при норме 2,50 ч. Превышение составляет 1,57 ч (+62,8 п.п.).\n5. Станция ВОЙНОВКА (Свердловская ж.д.): факт 4,32 ч при норме 3,00 ч. Превышение составляет 1,32 ч (+44,0 п.п.).\n\n**Зональный статус и динамика:**\nПо всем пяти позициям наблюдается работа с превышением норматива (красная зона). Отклонения от плана варьируются в диапазоне от +44,0% до +98,9%. Динамика следующая: максимальное относительное превышение зафиксировано на станции АЛТАЙСКАЯ (+98,9%), абсолютное — на станции ПЕНЗА III (+3,30 ч).\n\n**Выводы:**\nПревышение норматива простоя транзитного вагона без переработки обусловлено комплексом факторов: недостаточной перерабатывающей способностью станций в пиковые периоды, состоянием сортировочных устройств, загрузкой станционных путей и режимом работы маневровых локомотивов. Наблюдается системное отставание на участках Куйбышевской и Западно-Сибирской железных дорог. Требуется усиление контроля за исполнением графиков формирования и отправления поездов, а также оперативная корректировка ресурсов маневровой работы в часы максимального поступления транзита.\n\nИСТОЧНИК ДЛЯ ОТВЕТА: справки о работе важнейших сортировочных станций к ГЦУ.",
+  "err": null
+ },
+ {
+  "i": 15,
+  "q": "Проанализируй отклонения от норматива простоя транзитного вагона с переработкой. Определи 5 станций с наибольшим превышением норматива (в часах и в процентах). Сделай выводы",
+  "verdict": "PASS",
+  "sec": 25.9,
+  "nq": 1,
+  "sqls": [
+   "SELECT      report_date,     station,     idle_transit_pere AS fact_hours,     idle_transit_pere_norm AS norm_hours,     (idle_transit_pere - idle_transit_pere_"
+  ],
+  "ans": "\n\nВ отчётные сутки (12.03.2026) по показателю простоя транзитного вагона с переработкой зафиксировано системное невыполнение нормативов на ключевых сортировочных узлах сети. Все рассмотренные станции находятся в красной зоне риска (источник — справка о работе важнейших сортировочных станций).\n\nТоп-5 станций с наибольшим превышением норматива:\n1. ЮДИНО — факт 56,1 ч при нормативе 19,0 ч; превышение составляет 37,1 ч (+195,3 %).\n2. ДЕМА — факт 37,8 ч при нормативе 13,5 ч; превышение составляет 24,3 ч (+180,0 %).\n3. ПЕРМЬ-СОРТ — факт 39,5 ч при нормативе 17,0 ч; превышение составляет 22,5 ч (+132,3 %).\n4. КОЧЕТОВКА I — факт 39,1 ч при нормативе 18,0 ч; превышение составляет 21,1 ч (+116,9 %).\n5. БРЯНСК-ЛЬГОВ — факт 40,1 ч при нормативе 21,4 ч; превышение составляет 18,7 ч (+87,3 %).\n\nВыводы:\nНаблюдается устойчивое отклонение фактических показателей от установленных нормативов на пяти крупнейших сортировочных станциях. Максимальные нарушения зафиксированы на станциях ЮДИНО и ДЕМА, где простой транзитного вагона с переработкой превышает плановые значения более чем в два раза. Подобная динамика свидетельствует о перегрузке технологических процессов на данных узлах, что оказывает прямое влияние на оборачиваемость подвижного состава и пропускную способность магистральных направлений. Для стабилизации показателя требуется проведение внепланового анализа причин задержек (недостаток расформировочных ресурсов, сбои в подаче вагонов, организационные нарушения) и разработка корректирующих мероприятий по оптимизации работы сортировочных горков и маневровых локомотивов.",
+  "err": null
+ },
+ {
+  "i": 16,
+  "q": "Проанализируй отклонения от норматива рабочего парка  вагонов. Определи 5 станций с наибольшим превышением норматива (в вагонах и в процентах). Сделай выводы",
+  "verdict": "PASS",
+  "sec": 20.8,
+  "nq": 1,
+  "sqls": [
+   "WITH latest AS (SELECT MAX(report_date) AS dt FROM spravki_sort_stations WHERE period = 'сут.') SELECT      station,     working_park AS факт_вагонов,     park_"
+  ],
+  "ans": "\n\n**Анализ отклонений фактического рабочего парка вагонов от норматива (ежесуточный мониторинг)**\n\nПо данным за последние сутки на сортировочных станциях сети ОАО «РЖД» зафиксировано превышение утверждённых нормативов рабочего парка. Превышение лимита классифицируется как «красная зона» по показателю загруженности узловых парков, что свидетельствует о дефиците пропускной способности горки или задержке оборота вагонов в пределах станции.\n\n**Топ-5 станций с наибольшим превышением норматива:**\n1. **Агрыз** — факт 2861 вагон при нормативе 1633 вагона; превышение составляет 1228 вагонов (+75,2 %).\n2. **Хабаровск II** — факт 5040 вагонов при нормативе 3827 вагонов; превышение составляет 1213 вагонов (+31,7 %).\n3. **Юдино** — факт 2794 вагона при нормативе 1722 вагона; превышение составляет 1072 вагона (+62,3 %).\n4. **Брянск-Льгов** — факт 3305 вагонов при нормативе 2300 вагонов; превышение составляет 1005 вагонов (+43,7 %).\n5. **Дема** — факт 3655 вагонов при нормативе 2650 вагонов; превышение составляет 1005 вагонов (+37,9 %).\n\n**Выводы и оценка ситуации:**\n- Наблюдается устойчивое превышение норматива на ключевых узлах Западной Сибири (Агрыз), Дальнего Востока (Хабаровск II) и Центральной России (Юдино, Брянск-Льгов). Станции Агрыз и Юдино демонстрируют наиболее критичную динамику: отклонение превышает 60 %, что указывает на системное накопление вагонов в пределах парка.\n- Превышение норматива рабочего парка ограничивает пропускную способность сортировочных горки и путей накопления, увеличивает время простоя транзитного вагона и замедляет оборот подвижного состава по маршрутам следования.\n- Для стабилизации ситуации требуется усиление маневровой работы на указанных станциях, оперативное перераспределение порожнего парка между смежными участками, а также корректировка графиков прибытия составов для выравнивания нагрузки в течение суток.\n\n*Источник данных: справки к ГЦУ.*",
+  "err": null
+ },
+ {
+  "i": 17,
+  "q": "Проанализируй выполнение технической скорости движения поездов. Представь конкретные цифры.",
+  "verdict": "EMPTY",
+  "sec": 22.9,
+  "nq": 9,
+  "sqls": [
+   "SELECT road, day_fact, day_delta, month_fact, month_delta, year_delta FROM spravki_speed WHERE report_date = '2026-03-12' AND speed_type = 'technical' ORDER BY ",
+   "SELECT road, day_fact, day_delta, month_fact, month_delta, year_delta FROM spravki_speed WHERE report_date = '2026-03-12' AND speed_type = 'technical' AND road ",
+   "SELECT DISTINCT road FROM spravki_speed WHERE report_date = '2026-03-12' AND speed_type = 'technical' ORDER BY road",
+   "SELECT DISTINCT road FROM spravki_speed WHERE report_date = '2026-03-12' AND speed_type = 'section' ORDER BY road LIMIT 5",
+   "SELECT DISTINCT road FROM spravki_speed WHERE report_date = '2026-03-12' AND speed_type = 'section' ORDER BY road",
+   "SELECT road FROM spravki_speed WHERE report_date = '2026-03-12' AND speed_type = 'section' ORDER BY road",
+   "SELECT DISTINCT road FROM spravki_speed WHERE report_date = '2026-03-12' AND speed_type = 'section' AND (road LIKE '%Сверд%' OR road LIKE '%Север%') ORDER BY ro",
+   "SELECT DISTINCT road FROM spravki_speed WHERE report_date = '2026-03-12' AND speed_type = 'technical' AND (road LIKE '%Север%' OR road LIKE '%Сверд%') ORDER BY ",
+   "SELECT speed_type, COUNT(*) FROM spravki_speed WHERE report_date = '2026-03-12' GROUP BY speed_type"
+  ],
+  "ans": null,
+  "err": null
+ },
+ {
+  "i": 18,
+  "q": "Какие железные дороги допустили наибольшее негативное отступление от плановых параметров за отчетные сутки и с начала месяца",
+  "verdict": "EMPTY",
+  "sec": 30.8,
+  "nq": 2,
+  "sqls": [
+   "SELECT DISTINCT name FROM metrics WHERE name ILIKE '%отклонение%' OR name ILIKE '%план%' LIMIT 20",
+   "SELECT DISTINCT name FROM metrics WHERE name ILIKE '%безопас%' OR name ILIKE '%авар%' OR name ILIKE '%инцидент%' LIMIT 20"
+  ],
+  "ans": null,
+  "err": null
+ },
+ {
+  "i": 19,
+  "q": "Предоставь информацию о количестве отставленных от движения поездов с распределением по дорогам",
+  "verdict": "PASS",
+  "sec": 21.1,
+  "nq": 1,
+  "sqls": [
+   "SELECT      rc.canonical AS road_name,     sd.trains AS held_trains_count FROM spravki_delays sd JOIN road_codes rc ON sd.road_code = rc.code WHERE sd.report_da"
+  ],
+  "ans": "\n\nПо состоянию на 12 марта 2026 года в сети ОАО «РЖД» отставлено от движения поездов 475 единиц.\n\nРаспределение показателя по железнодорожным дорогам (по убыванию количества):\n\n*   **Северо-Кавказская** — 84\n*   **Красноярская** — 54\n*   **Дальневосточная** — 51\n*   **Восточно-Сибирская** — 40\n*   **Октябрьская** — 40\n*   **Приволжская** — 38\n*   **Западно-Сибирская** — 32\n*   **Куйбышевская** — 29\n*   **Свердловская** — 24\n*   **Забайкальская** — 19\n*   **Южно-Уральская** — 18\n*   **Горьковская** — 14\n*   **Северная** — 13\n*   **Юго-Восточная** — 10\n*   **Московская** — 9\n\nДанные сформированы на основе справок о задержках (таблица `spravki_delays`).",
+  "err": null
+ },
+ {
+  "i": 20,
+  "q": "Сколько поездов задержано по ответственности подразделений РЖД",
+  "verdict": "FAIL",
+  "sec": 28.1,
+  "nq": 1,
+  "sqls": [
+   "SELECT delay_code, trains FROM spravki_delays WHERE report_date = '2026-03-12' AND road_code = 'СЕТЬ' ORDER BY trains DESC;"
+  ],
+  "ans": "\n\nПо состоянию на 12 марта 2026 года отставлено от движения **475** грузовых поездов (всего по сети).\n\nИз них по причинам, относящимся к ответственности подразделений ОАО «РЖД» (отказы технических средств, нехватка локомотивов, организационные вопросы), задержано **212** поездов.\n\nОсновные причины отставлений поездов по кодам ответственности РЖД:\n*   **59** — отказ техсредств ДИ (код 43);\n*   **97** — временное размещение подвижного состава (код 5);\n*   **27** — нехватка локомотивов перевозчика (код 22);\n*   **22** — отказ техсредств Т (код 21).\n\nОстальные причины отставлений связаны с внешними факторами: неприёмом грузополучателями (152 поезда), работой пограничных переходов (76 поездов) и другими обстоятельствами.\n\n*Источник данных: Справка о задержанных поездах (справки к ГЦУ).*",
+  "err": null
+ },
+ {
+  "i": 21,
+  "q": "Проанализируй отказы технических средств",
+  "verdict": "EMPTY",
+  "sec": 17.7,
+  "nq": 7,
+  "sqls": [
+   "SELECT dept, failures_2026 AS \"факт за сутки\", failures_2025 AS \"прошлый год\", change_pct AS \"изменение к прошлому году, %\" FROM spravki_failures WHERE report_d",
+   "SELECT name, day_fact, month_fact, year_fact FROM metrics WHERE name IN ('Всего отказов ТС, 1,2 категория', 'Отказы ТС, 3 категория')",
+   "SELECT name, dept, day_fact, month_fact, year_fact FROM metrics WHERE name IN ('Всего отказов ТС, 1,2 категория', 'Отказы ТС, 3 категория') ORDER BY name, dept ",
+   "SELECT name, road, day_fact, month_fact, year_fact FROM metrics WHERE name IN ('Всего отказов ТС, 1,2 категория', 'Отказы ТС, 3 категория') ORDER BY name, road ",
+   "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'metrics' ORDER BY ordinal_position LIMIT 30",
+   "SELECT name, day_fact, month_fact, year_fact, day_to_plan, day_to_prev_year, month_to_plan, month_to_prev_yr, year_to_plan, year_to_prev_yr FROM metrics WHERE n",
+   "SELECT r.report_date, m.name, m.day_fact, m.month_fact, m.year_fact FROM metrics m JOIN reports r ON m.report_id = r.id WHERE m.name IN ('Всего отказов ТС, 1,2 "
+  ],
+  "ans": null,
+  "err": null
+ },
+ {
+  "i": 22,
+  "q": "Какие подразделения допустили рост отказов технических средств к уровню прошлого года.",
+  "verdict": "PASS",
+  "sec": 11.2,
+  "nq": 2,
+  "sqls": [
+   "SELECT dept, failures_2025, failures_2026, change_pct FROM spravki_failures WHERE report_date = (SELECT MAX(report_date) FROM spravki_failures) AND section = 1 ",
+   "SELECT dept, failures_2025, failures_2026, change_pct FROM spravki_failures WHERE report_date = (SELECT MAX(report_date) FROM spravki_failures) AND section = 3 "
+  ],
+  "ans": "\n\n**Отказы технических средств к уровню прошлого года — рост зафиксирован на следующих подразделениях:**\n\n**Железные дороги (отказы, произошедшие на территории):**\n\n| Подразделение | Отказов 2025 г. | Отказов 2026 г. | Изменение, % |\n|---|---|---|---|\n| Северо-Кавказская ж.д. | 2 | 10 | +400,0 |\n| Забайкальская ж.д. | 14 | 28 | +100,0 |\n| Куйбышевская ж.д. | 0 | 5 | +100,0 |\n| Южно-Уральская ж.д. | 6 | 11 | +83,3 |\n| Горьковская ж.д. | 7 | 12 | +71,4 |\n| Октябрьская ж.д. | 13 | 18 | +38,5 |\n| Приволжская ж.д. | 11 | 15 | +36,4 |\n| Северная ж.д. | 10 | 13 | +30,0 |\n| Юго-Восточная ж.д. | 8 | 10 | +25,0 |\n| Свердловская ж.д. | 23 | 28 | +21,7 |\n| Западно-Сибирская ж.д. | 5 | 6 | +20,0 |\n| Восточно-Сибирская ж.д. | 31 | 34 | +9,7 |\n| Красноярская ж.д. | 12 | 13 | +8,3 |\n\n**Хозяйственные комплексы (отказы по ответственности):**\n\n| Подразделение | Отказов 2025 г. | Отказов 2026 г. | Изменение, % |\n|---|---|---|---|\n| Инфраструктурный комплекс | 11 | 40 | +263,6 |\n| Локомотивный комплекс | 95 | 122 | +28,4 |\n\n**Сводные показатели:**\n- Итого по сети: 177 → 234 отказа (+32,2%).\n- Всего по инфраструктурному комплексу: 27 → 67 (+148,2%).\n- Всего по локомотивному комплексу: 101 → 124 (+22,8%).\n\n**Источник:** Справки к докладам ЦГЦУ (таблица spravki_failures).",
+  "err": null
+ },
+ {
+  "i": 23,
+  "q": "Какие дороги и подразделения допустили наибольшую задержку грузовых поездов по причине отказов технических средств.",
+  "verdict": "FAIL",
+  "sec": 18.2,
+  "nq": 1,
+  "sqls": [
+   "SELECT      dept AS \"Подразделение\",     freight_train_hours AS \"Задержка грузовых поездов (поездо-ч)\",     failures_2026 AS \"Отказы за сутки\" FROM spravki_fail"
+  ],
+  "ans": "\n\nПо данным справочных материалов к докладам ГЦУ (отказы технических средств 1–2 категории, произошедшие на территории дорог), наибольшая задержка грузовых поездов (в поезд-часах) наблюдается в следующих подразделениях:\n\n• Свердловская — 101,65\n• Восточно-Сибирская — 93,15\n• Октябрьская — 74,78\n• Дальневосточная — 69,03\n• Приволжская — 46,92\n• Забайкальская — 41,90\n• Горьковская — 27,98\n• Северная — 24,72\n• Красноярская — 20,22\n• Юго-Восточная — 15,83\n• Куйбышевская — 13,95\n• Южно-Уральская — 12,68\n• Западно-Сибирская — 11,83\n• Северо-Кавказская — 10,98\n• Московская — 9,30\n\nДанные отражают суммарную задержку грузовых поездов по причине отказов технических средств на территории соответствующих дорог за отчетный период.",
+  "err": null
+ },
+ {
+  "i": 24,
+  "q": "Проанализируй содержание эксплуатируемого парка локомотивов",
+  "verdict": "ANS",
+  "sec": 40.0,
+  "nq": 1,
+  "sqls": [
+   "SELECT road, section, plan, fact, delta, plan_total, fact_total, delta_total FROM spravki_locomotives WHERE report_date = '2026-03-12' ORDER BY polygon, section"
+  ],
+  "ans": "\n\n**Анализ содержания эксплуатируемого парка локомотивов**\n*(данные на 12.03.2026, источник — АРМ ОНД)*\n\nНаблюдается недосодержание эксплуатационного парка локомотивов в грузовом движении на ряде дорог и полигонов. По сравнению с плановыми заданиями фиксируются отклонения в сторону дефицита.\n\n**Основные показатели по дорогам и полигонам:**\n\n*   **Горьковская ж/д (ГОРЬК):** Недостаток парка в грузовом движении составляет 25 локомотивов (переменный ток — минус 27 ед., тепловозы — минус 5 ед.). Общее отклонение по всем видам движения — минус 25 ед.\n*   **Северная ж/д (СЕВ):** Наблюдается дефицит локомотивов по обоим типам тяги: переменный ток минус 22 ед., тепловозы минус 24 ед. Общее отклонение — минус 24 ед.\n*   **Свердловская ж/д (СВЕРД):** Недосодержание парка в постоянном токе составляет 22 локомотива, по тепловозам — также минус 22 ед. Общее отклонение — минус 21 ед.\n*   **Забайкальская ж/д (ЗАБ):** Дефицит в грузовом движении по переменному току — 25 локомотивов, по тепловозам — 1 единица. Общее отклонение — минус 12 ед.\n*   **Восточно-Сибирская ж/д (В-СИБ):** Недостаток в грузовом движении по переменному току — 2 локомотива, по тепловозам — 5 единиц. При этом по всем видам движения наблюдается перевыполнение плана (+12 ед.).\n*   **Западно-Сибирская ж/д (З-СИБ):** Недосодержание в грузовом движении по переменному току — 13 локомотивов, постоянный ток — минус 17 ед. Общее отклонение — минус 9 ед.\n*   **Октябрьская ж/д (ОКТ):** Дефицит в грузовом движении по переменному току — 9 локомотивов, постоянный ток — без отклонений. Общее отклонение — минус 6 ед.\n\n**По полигонам:**\n*   **Восточный полигон (переменный ток):** Недосодержание эксплуатационного парка в грузовом движении составляет 29 локомотивов при плане 1892 ед. По всем видам движения парк перевыполнен на 11 единиц.\n\nНа остальных направлениях отклонения носят локальный характер или находятся в пределах допустимых значений (например, Московская ж/д — перевыполнение плана).",
+  "err": null
+ },
+ {
+  "i": 25,
+  "q": "Какие дороги и подразделения допустили наибольшую задержку грузовых поездов по причине отказов технических средств.",
+  "verdict": "ANS",
+  "sec": 24.4,
+  "nq": 1,
+  "sqls": [
+   "WITH latest AS (SELECT MAX(report_date) AS dt FROM spravki_failures) SELECT dept, freight_train_hours FROM spravki_failures WHERE section = 1 AND report_date = "
+  ],
+  "ans": "\n\nФактические показатели задержки грузовых поездов по причине отказов технических средств (поездо-часы) за последние отчетные сутки составляют 574,93.\n\nНаибольшие значения наблюдаются на следующих дорогах:\n• Свердловская — 101,65\n• Восточно-Сибирская — 93,15\n• Октябрьская — 74,78\n• Дальневосточная — 69,03\n• Приволжская — 46,92\n• Забайкальская — 41,90\n• Горьковская — 27,98\n• Северная — 24,72\n• Красноярская — 20,22\n• Юго-Восточная — 15,83\n• Куйбышевская — 13,95\n• Южно-Уральская — 12,68\n• Западно-Сибирская — 11,83\n• Северо-Кавказская — 10,98\n• Московская — 9,30\n\nДанные за с начала месяца и года, а также плановые значения в текущей выборке отсутствуют. Зональный статус не определяется без плановых ориентиров.\n\nИсточники: справки к ГЦУ.",
+  "err": null
+ },
+ {
+  "i": 26,
+  "q": "На каких полигонах допущено недосодержание эксплуатируемого парка локомотивов к плану.",
+  "verdict": "FAIL",
+  "sec": 16.7,
+  "nq": 1,
+  "sqls": [
+   "SELECT      polygon AS \"Тяговый полигон\",     SUM(plan_total) AS \"План парка, ед.\",     SUM(fact_total) AS \"Факт парка, ед.\",     SUM(delta_total) AS \"Отклонени"
+  ],
+  "ans": "\n\nПо состоянию на 12.03.2026 недосодержание эксплуатируемого парка локомотивов к плану зафиксировано на одном тяговом полигоне:\n— Северо-Западный: отклонение составляет минус 107 единиц (план — 2353, факт — 2246).\n\nИСТОЧНИК ДАННЫХ: АРМ ОНД.",
+  "err": null
+ },
+ {
+  "i": 27,
+  "q": "Как недосодержание эксплуатируемого парка влияет на выполнение показателя «Доля грузовых отправок в груженых вагонах, доставленных в срок».",
+  "verdict": "ANS",
+  "sec": 16.4,
+  "nq": 1,
+  "sqls": [
+   "SELECT road, section, plan, fact, delta, reserve FROM spravki_locomotives WHERE report_date = '2026-03-12' ORDER BY road, section"
+  ],
+  "ans": "\n\n**Влияние недосодержания эксплуатируемого парка на показатель «Доля грузовых отправок в груженых вагонах, доставленных в срок»**\n\nНедосодержание эксплуатируемого парка локомотивов является одним из ключевых внутренних факторов, обусловливающих снижение доли отправок, доставленных в установленный срок. Механизм влияния реализуется через следующую цепочку:\n\n1. **Дефицит тяги** приводит к невозможности своевременного формирования и отправления поездов по графику. Недостаток локомотивов на станциях отправления создает очереди, увеличивает время простоя под грузовыми операциями и нарушает технологические сроки доставки.\n2. **Нарушение графика движения** из-за нехватки тяги вызывает каскадные задержки на участках сети, что напрямую отражается на соблюдении договорных условий доставки.\n3. **Снижение провозной способности** участков: при недосодержании парка сокращается количество поездов, которые могут быть отправлены в течение суток, что увеличивает накопление грузов на станциях и удлиняет общий срок доставки.\n\n**Фактические данные по недосодержанию (по состоянию на 2026-03-12, источник — АРМ ОНД):**\nНаиболее выраженный дефицит эксплуатируемого парка локомотивов в грузовом движении наблюдается:\n- Северо-Западный полигон: −71 ед. (переменный ток), −49 ед. (постоянный ток), −51 ед. (тепловозы)\n- ГОРЬК: −27 ед. (переменный ток)\n- ЗАБ: −25 ед. (переменный ток)\n- СВЕРД: −22 ед. (постоянный ток), −22 ед. (тепловозы)\n- СЕВ: −22 ед. (переменный ток), −24 ед. (тепловозы)\n\n**Связь с показателем доставки в срок:**\nСогласно справочным материалам ЦГЦУ, техническое состояние подвижного состава и обеспеченность тягой относятся к числу ключевых факторов, определяющих выполнение показателей доставки грузов. Недосодержание парка локомотивов по полигонам (источник — АРМ ОНД) напрямую коррелирует с ростом числа отставленных поездов и снижением доли отправок, доставленных в срок (показатель «Доля груз. отправок в груж. вагонах с собл. установл. срока доставки», раздел II metrics).\n\nДля устранения негативного влияния требуется комплекс мероприятий по восстановлению парка локомотивов за счет резервов, оптимизации использования подвижного состава на полигонах и координации работы с вагонными предприятиями для сокращения времени ремонта.",
+  "err": null
+ },
+ {
+  "i": 28,
+  "q": "Проанализируй ограничения скорости",
+  "verdict": "PASS",
+  "sec": 21.5,
+  "nq": 1,
+  "sqls": [
+   "SELECT road, restrictions, restrictions_km, ratio_pct, delta_km  FROM spravki_speed_restrictions  WHERE report_date = '2026-03-12' AND row_type = 'fact' ORDER B"
+  ],
+  "ans": "\n\nПо состоянию на 12 марта 2026 года ситуация с ограничениями скорости на сети ОАО «РЖД» следующая:\n\n**Общие показатели по сети:**\n*   **Количество ограничений:** 1893 шт.\n*   **Протяжённость участков:** 1167,7 км.\n\n**Топ-дороги по протяжённости ограничений скорости (факт):**\n1.  **Свердловская** — 257,0 км (310 ограничений).\n2.  **Горьковская** — 179,2 км (327 ограничений).\n3.  **Московская** — 134,4 км (168 ограничений).\n4.  **Восточно-Сибирская** — 116,6 км (187 ограничений).\n5.  **Забайкальская** — 86,2 км (197 ограничений).\n\nДанные по изменению протяжённости к прошлому периоду в отчётной справке на текущую дату отсутствуют.\n\n*ИСТОЧНИК: Справка-картинка в xlsx (извлечена вручную), таблица БД spravki_speed_restrictions.*",
+  "err": null
+ },
+ {
+  "i": 29,
+  "q": "На каких дорогах превышается количество и протяженность действующих ограничений скорости движения поездов.",
+  "verdict": "PASS",
+  "sec": 25.7,
+  "nq": 5,
+  "sqls": [
+   "WITH latest_date AS (SELECT MAX(report_date) as dt FROM spravki_speed_restrictions),      fact_data AS (          SELECT road, restrictions, restrictions_km    ",
+   "SELECT report_date, road, row_type, restrictions, restrictions_km FROM spravki_speed_restrictions ORDER BY report_date DESC LIMIT 20;",
+   "SELECT DISTINCT row_type FROM spravki_speed_restrictions;",
+   "SELECT report_date, road, row_type, restrictions, restrictions_km FROM spravki_speed_restrictions WHERE row_type = 'plan' ORDER BY report_date DESC LIMIT 20;",
+   "WITH fact_data AS (     SELECT road, restrictions, restrictions_km     FROM spravki_speed_restrictions     WHERE report_date = '2026-03-12' AND row_type = 'fact"
+  ],
+  "ans": "\n\nПо состоянию на 12.03.2026 г. превышение плановых значений (план от 06.03.2026 г.) зафиксировано на следующих дорогах:\n\n**Горьковская железная дорога**\n*   Превышено количество ограничений: факт 327 ед., план 173 ед. (превышение на 154 ед.).\n*   Превышена протяженность ограничений: факт 179,2 км, план 173,9 км (превышение на 5,3 км).\n\n**Северо-Кавказская железная дорога**\n*   Превышено количество ограничений: факт 109 ед., план 106 ед. (превышение на 3 ед.).\n*   Протяженность ограничений в пределах плана: факт 78,6 км, план 106,2 км.\n\n**ИТОЧНИК ДАННЫХ:** Справка-картинка в xlsx (извлечено вручную), таблица `spravki_speed_restrictions`.",
+  "err": null
+ },
+ {
+  "i": 30,
+  "q": "Как влияют ограничения скорости на показатель «Доля грузовых отправок в груженых вагонах, доставленных в срок» и выполнение участковой скорости.",
+  "verdict": "ANS",
+  "sec": 46.0,
+  "nq": 8,
+  "sqls": [
+   "SELECT day_fact, month_fact, year_fact, norm, zone_label, unit  FROM metrics  WHERE name = 'Доля груз. отправок в груж. вагонах с собл. установл. срока доставки",
+   "SELECT day_fact, month_fact, norm, prev_year, day_delta, month_delta, year_delta  FROM spravki_speed  WHERE speed_type = 'section' AND road = 'СЕТЬ' AND report_",
+   "SELECT road, restrictions, restrictions_km, ratio_pct, delta_km  FROM spravki_speed_restrictions  WHERE row_type = 'fact' AND report_date = (SELECT MAX(report_d",
+   "SELECT * FROM metrics  WHERE name = 'Доля груз. отправок в груж. вагонах с собл. установл. срока доставки' AND report_date = (SELECT MAX(report_date) FROM repor",
+   "SELECT m.day_fact, m.month_fact, m.year_fact, m.norm, m.zone_label, m.unit, r.report_date FROM metrics m JOIN reports r ON m.report_id = r.id WHERE m.name = 'До",
+   "SELECT m.day_fact, m.month_fact, m.year_fact, m.zone_label, m.unit, r.report_date FROM metrics m JOIN reports r ON m.report_id = r.id WHERE m.name = 'Доля груз.",
+   "SELECT column_name, data_type  FROM information_schema.columns  WHERE table_name = 'metrics' AND table_schema = 'public';",
+   "SELECT m.day_fact, m.month_fact, m.year_fact,         m.day_to_plan, m.month_to_plan, m.year_to_plan,        m.day_to_prev_year, m.month_to_prev_yr, m.year_to_p"
+  ],
+  "ans": "\n\n**Влияние ограничений скорости на показатель доставки грузов и выполнение участковой скорости**\n\nОграничения скорости, не предусмотренные графиком движения поездов, являются одним из ключевых инфраструктурных факторов, напрямую влияющих на снижение участковой скорости и увеличение времени следования грузовых составов. Длительное или массированное применение таких ограничений создаёт риски срыва установленных сроков доставки, так как сокращает пропускную способность участков и увеличивает время нахождения вагонов в пути.\n\n**1. Доля груз. отправок в груж. вагонах с соблюдением установленной срока доставки (источник — КАСАНТ)**\nПо состоянию на 30.04.2026 показатель находится в красной зоне риска:\n- Факт за сутки составил 98,335%, что превышает плановое значение на 0,335 п.п. и выше уровня прошлого года на 1,693 п.п.\n- С начала месяца факт равен 98,364% (отклонение от плана +0,364 п.п., к прошлому году +1,722 п.п.).\n- С начала года показатель составил 97,765%, что ниже планового значения на 0,235 п.п., однако динамика к прошлому году положительная (+1,203 п.п.).\n\nНесмотря на выполнение плана по суточным и месячным накопительным итогам, отрицательное отклонение с начала года указывает на необходимость контроля за соблюдением сроков доставки на протяжении всего периода.\n\n**2. Выполнение участковой скорости (источник — справка-картинка в xlsx)**\nСредняя участковая скорость в грузовом движении по сети демонстрирует снижение относительно норматива и прошлогодних значений:\n- Факт за сутки: 38,0 км/ч при норме 38,2 км/ч (отклонение −0,2 км/ч).\n- С начала месяца: 38,1 км/ч (отклонение от нормы −0,1 км/ч).\n- Отклонение к прошлому году: −0,8 км/ч.\n\nСнижение участковой скорости напрямую коррелирует с наличием ограничений скорости на участках пути и инфраструктурных объектов.\n\n**3. Наличие ограничений скорости (источник — справка-картинка в xlsx)**\nПо состоянию на 12.03.2026 по сети ОАО «РЖД» зафиксировано:\n- Общее количество ограничений скорости: 1893 ед.\n- Общая протяжённость участков с ограничениями: 1167,7 км.\n\nНаибольшая концентрация ограничений наблюдается на следующих дорогах (по количеству): Горьковская (327), Свердловская (310), Забайкальская (197), Московская (168), Красноярская (134). По протяжённости лидируют: Свердловская (257,0 км), Горьковская (179,2 км), Московская (134,4 км), Восточно-Сибирская (116,6 км).\n\n**Аналитическая оценка влияния**\nМассированное наличие ограничений скорости (более 1800 участков общей протяжённостью свыше 1100 км) создаёт системные задержки в движении грузовых поездов. Снижение участковой скорости до 38,0–38,1 км/ч при норме 38,2 км/ч свидетельствует о том, что инфраструктурные ограничения уже оказывают негативное влияние на эксплуатационную работу. При сохранении текущей ситуации и отсутствии оперативного устранения причин ограничений (аварийность пути, ремонтные окна, погодные условия) наблюдается риск дальнейшего снижения участковой скорости и перехода показателя доставки грузов в срок в жёлтую или красную зону по накопительным итогам года.\n\nДля стабилизации показателей требуется приоритетное устранение ограничений на участках с наибольшей протяжённостью (Свердловская, Горьковская, Московская дороги) и синхронизация ремонтных окон с графиком движения для минимизации влияния на сроки доставки.",
+  "err": null
+ },
+ {
+  "i": 31,
+  "q": "Привет! Скажи, откуда ты берешь данные по показателям работы железных дорог?",
+  "verdict": "ANS",
+  "sec": 5.0,
+  "nq": 0,
+  "sqls": [],
+  "ans": "\n\nДанные по показателям работы железных дорог поступают из специализированных автоматизированных систем управления и отчетности ОАО «РЖД». Конкретный источник зависит от вида показателя:\n\n- **АСУ ВОП-2** — система оперативного контроля;\n- **КАСАНТ** — комплексная автоматизированная система анализа нормативно-справочной информации;\n- **АРМ ОНД** — автоматизированное рабочее место организации движения;\n- **СИС Эффект** — система информационно-аналитического сопровождения эффективности;\n- **ПК ИУС ЦУП НП** — персональный компьютер информационной системы управления перевозочным процессом;\n- **ЕМД ПП УР** — единая модель данных по планированию и управлению перевозками;\n- **Доклад СКИМ ОД** — отчетность службы контроля и мониторинга организации движения.\n\nТочный источник для каждого показателя указывается в технической документации системы (в описании таблиц базы данных). При формировании отчета используется актуальная выгрузка из соответствующей системы, обеспечивающая ежедневное обновление информации.",
+  "err": null
+ },
+ {
+  "i": 32,
+  "q": "Проанализируй показатели и скажи какие вопросы мне необходимо рассмотреть на оперативном совещании",
+  "verdict": "ANS",
+  "sec": 72.2,
+  "nq": 6,
+  "sqls": [
+   "WITH latest_report AS (SELECT MAX(report_date) as max_date FROM reports),      metrics_data AS (         SELECT              m.name,             r.report_date, ",
+   "WITH latest_report AS (SELECT MAX(report_date) as max_date FROM reports),      metrics_data AS (         SELECT              m.name,             r.report_date, ",
+   "WITH latest_report AS (SELECT MAX(report_date) as max_date FROM reports),      metrics_data AS (         SELECT              m.name,             r.report_date, ",
+   "WITH latest_report AS (SELECT MAX(report_date) as max_date FROM reports),      metrics_data AS (         SELECT              m.name,             r.report_date, ",
+   "WITH latest_report AS (SELECT MAX(report_date) as max_date FROM reports),      metrics_data AS (         SELECT              m.name,             r.report_date, ",
+   "WITH latest_report AS (SELECT MAX(report_date) as max_date FROM reports),      critical_metrics AS (         SELECT              m.name,             r.report_da"
+  ],
+  "ans": "\n\nПо состоянию на 30 апреля 2026 года выявлены критические отклонения по ряду показателей, требующие вынесения на оперативное совещание. Ниже представлен анализ проблемных зон и вопросы для рассмотрения.\n\n### 1. Безопасность движения и техническое состояние\n\n**Коэффициент разрыва автотормозных колодок (КР)**\n*   **Статус:** Красная зона риска.\n*   **Данные:** Факт с начала месяца составил **3,202%**, с начала года — **2,846%**. Отклонения от плана и к прошлому году в отчете не детализированы, однако нахождение в красной зоне свидетельствует о превышении допустимых норм.\n*   **Вопрос для совещания:** Какие причины роста коэффициента разрыва фиксируются на дорогах сети? Какие мероприятия по снижению КР реализуются в текущем месяце?\n\n**Балловая оценка состояния пути**\n*   **Статус:** Жёлтая зона риска.\n*   **Данные:** Факт с начала месяца — **4,05 балла**, с начала года — **4,13 балла**.\n*   **Вопрос для совещания:** Какие участки сети требуют приоритетного вмешательства по содержанию пути для вывода показателя в зелёную зону?\n\n### 2. Транспортная работа и выполнение плановых заданий\n\n**Внутрироссийская погрузка**\n*   **Статус:** Красная зона риска.\n*   **Данные:** Факт за сутки составил **1751,6 тыс. тонн**. Отклонение от плана — **-9,97 п.п.**, к прошлому году — **-6,24 п.п.**\n*   **Вопрос для совещания:** Какие факторы обуславливают существенное невыполнение суточного плана погрузки (более 10%) и снижение объемов относительно прошлого года? Каков прогноз на конец месяца?\n\n**Грузооборот эксплуатационный**\n*   **Статус:** Красная зона риска.\n*   **Данные:** Факт за сутки — **7069,1 млн т·км**. Отклонение от плана — **-1,82%**, к прошлому году — **+1,45%** (рост).\n*   **Вопрос для совещания:** Несмотря на рост к прошлому году, почему показатель находится в красной зоне относительно плана? Какие ограничения влияют на выполнение суточного задания по грузообороту?\n\n**Выгрузка**\n*   **Статус:** Красная зона риска.\n*   **Данные:** Факт за сутки — **50 037 вагонов**. Отклонение от плана — **-1,09%**.\n*   **Вопрос для совещания:** Какие причины срыва выгрузочных планов фиксируются на ключевых узлах?\n\n### 3. Пунктуальность и сроки доставки (ДОСС)\n\n**Количество фактов опоздания грузовых поездов по прибытию на конечную станцию**\n*   **Статус:** Красная зона риска.\n*   **Данные:** Факт с начала месяца — **37 520 поездов**, с начала года — **141 491 поезд**.\n*   **Вопрос для совещания:** Какие основные причины массовых опозданий поездов фиксируются в текущем месяце? Какова динамика по сравнению с предыдущими периодами и какие меры принимаются по снижению количества опозданий?\n\n**Доля груз. отправок в груж. вагонах с соблюдением установленного срока доставки (ДОСС)**\n*   **Статус:** Красная зона риска.\n*   **Данные:** Факт — **98,34%**. Отклонение к прошлому году — **+1,69 п.п.**\n*   **Вопрос для совещания:** При положительной динамике к прошлому году показатель находится в красной зоне. Каков целевой плановый индикатор и какие сегменты сети тянут долю ДОСС вниз?\n\n### 4. Вагонная работа (эффективность использования)\n\n**Вагоны иных собственников в порожнем состоянии (пробег)**\n*   **Статус:** Красная зона риска.\n*   **Данные:** Факт за сутки — **7452,8 млн т·км**. Отклонение от плана — **+4,43%**, к прошлому году — **+9,36%**.\n*   **Вопрос для совещания:** Рост пробега порожних вагонов иных собственников указывает на неэффективность вагонного парка. Какие причины увеличения холостого пробега и какие меры по его сокращению предусмотрены?\n\n**Итоговый перечень вопросов для оперативного совещания:**\n1.  Меры по снижению коэффициента разрыва (КР) в условиях нахождения показателя в красной зоне.\n2.  Причины невыполнения плана погрузки (-9,97 п.п.) и пути к его выполнению до конца месяца.\n3.  Анализ причин массовых опозданий поездов (37,5 тыс. фактов за месяц) и влияние на показатели ДОСС.\n4.  Мероприятия по снижению пробега порожних вагонов иных собственников (+9,36% к прошлому году).\n5.  План действий по выводу балловой оценки пути из жёлтой зоны риска.",
+  "err": null
+ }
+]
