@@ -336,6 +336,7 @@ def describe(table: str = "") -> str:
                             # the stated structure, not a command.
                             out.append("  В таблицах-справках spravki_* итог по сети — готовая строка-итог (road_code='СЕТЬ', row_level='network', 'Итого по сети') и вьюхи v_delays_total, v_ports_network; детальные строки и строки-итоги — разные уровни. В metrics этих столбцов нет: итог по сети там — строка road IS NULL.")
                             out.append("  Скорость (spravki_speed) измеряется в км/ч; отклонения по скорости — в км/ч.")
+                            out.append("  Единицы изменения к прошлому году: рост СЧЁТНЫХ величин (число отказов, поездов) — в процентах (%), а не в процентных пунктах (п.п.); п.п. применяются только к изменению ДОЛЕЙ/процентных показателей.")
                             for st in spr_tables:
                                 try:
                                     # Coverage window — live, no hardcoding.
