@@ -293,6 +293,31 @@ def describe(table: str = "") -> str:
                         out.append("")
                         out.append(f"reports.report_date: {dmin} .. {dmax} ({ndays} дат)")
 
+                        # Current operational report date — the date the daily ГЦУ
+                        # справки cover. Without this the model picks MAX(report_date)
+                        # which is the LAST metrics day (April), or "today" — both wrong
+                        # for the operational справки (delays/failures/ports/speed live
+                        # on ONE date). Computed live = most-recent date present across the
+                        # spravki_* tables. A neutral fact, not a command.
+                        try:
+                            cur.execute(
+                                "SELECT max(d) FROM ("
+                                "  SELECT max(report_date) d FROM spravki_delays"
+                                "  UNION ALL SELECT max(report_date) FROM spravki_failures"
+                                "  UNION ALL SELECT max(report_date) FROM spravki_port_stations"
+                                "  UNION ALL SELECT max(report_date) FROM spravki_speed"
+                                ") t")
+                            op_date = cur.fetchone()[0]
+                            if op_date:
+                                out.append(
+                                    f"Текущий оперативный отчёт ЦГЦУ — за {op_date}: на эту дату "
+                                    f"присутствуют все справки (delays/failures/ports/speed/"
+                                    f"locomotives/sort/restrictions). По metrics есть и более "
+                                    f"поздние даты (до {dmax}), но оперативные справки — только за "
+                                    f"{op_date}; на других датах справок нет (вернут 0 строк).")
+                        except Exception:
+                            pass
+
                         # spravki tables — name + live coverage window. No prose, no column
                         # hints (those are in each table's own describe()). The coverage window
                         # is the critical fact — without it the model confidently queries
