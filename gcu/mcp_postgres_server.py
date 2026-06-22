@@ -573,9 +573,19 @@ def find_indicator(query: str, k: int = 5) -> str:
 
     out = []
     if matches:
-        out.append("ИСТОЧНИК ДАННЫХ ДЛЯ ЭТОГО ВОПРОСА: " + ", ".join(matches) +
-                   ". Вызови describe(<table>) и далее query SELECT по этой таблице. "
-                   "В metrics этих данных нет — там только основные показатели.")
+        # spravki_* tables hold the DETAILED breakdown only for the date(s) they cover
+        # (see each table's coverage window in describe('metrics')). The SAME indicator
+        # as a network total also exists in METRICS across all report dates. So the
+        # routing depends on the date asked: a date inside the spravki coverage → use
+        # the spravki table for the detailed cut; a date outside it → use metrics.
+        # No dates are named here — the model compares the question's date to the live
+        # coverage windows shown by describe.
+        out.append("ИСТОЧНИК зависит от ДАТЫ в вопросе. Детальный разрез "
+                   "(по дорогам/станциям/кодам) — таблицы " + ", ".join(matches) +
+                   ", но ТОЛЬКО для дат из их покрытия (окна дат — в describe('metrics')). "
+                   "Если дата вопроса ВНЕ покрытия справки — тот же показатель как сетевой "
+                   "итог есть в metrics (см. кандидатов ниже). Сверь дату с покрытием и выбери "
+                   "источник; не утверждай, что показателя нет, не проверив metrics.")
         out.append("")
     out.append(f"Кандидаты в metrics по смыслу запроса (топ-{len(rows)}):")
     out.append("")
