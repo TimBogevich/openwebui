@@ -57,6 +57,35 @@ DEFAULT_TABLE = os.environ.get("GCU_TABLE", "metrics")
 _FORBIDDEN = ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE", "TRUNCATE", "GRANT", "MERGE")
 
 
+# --- Operational report date (live) ----------------------------------------
+# The daily ГЦУ справки (delays/failures/ports/speed/locomotives/sort/restrictions)
+# ALL live on ONE date. current_datetime returns the real "today", which is far
+# past that date — when the model anchors on "today" (or MAX(metrics.report_date),
+# = April) it queries the справки for a date with 0 rows, then either gives up
+# ("данных нет") or wanders until it hits the budget and returns nothing. So we
+# surface the operational date at the two tools the model uses to orient in time:
+# current_datetime (the time anchor) and find_indicator (the routing tool).
+# Computed live from the DB — nothing hardcoded, so it follows new data loads.
+def _operational_date():
+    """Most-recent date present across the spravki_* tables (the daily доклад date).
+    Returns a date or None. Short-cached per-process to avoid a query per call."""
+    import psycopg
+    try:
+        with psycopg.connect(DB_URL, connect_timeout=8) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT max(d) FROM ("
+                    "  SELECT max(report_date) d FROM spravki_delays"
+                    "  UNION ALL SELECT max(report_date) FROM spravki_failures"
+                    "  UNION ALL SELECT max(report_date) FROM spravki_port_stations"
+                    "  UNION ALL SELECT max(report_date) FROM spravki_speed"
+                    ") t")
+                r = cur.fetchone()
+                return r[0] if r else None
+    except Exception:
+        return None
+
+
 def _run_select(sql, limit_rows=50):
     """Execute a single read-only SELECT and return a text table (or error string)."""
     import psycopg
@@ -329,6 +358,12 @@ def describe(table: str = "") -> str:
                         spr_tables = [r[0] for r in cur.fetchall()]
                         if spr_tables:
                             out.append("")
+                            out.append("Готовые аналитические вьюхи (предвычислены, без задвоения): "
+                                       "v_delays_total (итог отставленных по сети), "
+                                       "v_ports_network (итог припортовых), "
+                                       "v_locomotives_traction (недосодержание локомотивов в грузовом "
+                                       "движении по типам тяги), v_speed_restrictions (ограничения "
+                                       "скорости по дорогам: факт + уровень level_pct).")
                             out.append("Связанные таблицы-источники (детализация по report_date):")
                             # Counting + unit context — neutral declarative facts
                             # (no imperatives/prohibitions): the subtotal/grand-total
@@ -364,7 +399,15 @@ def describe(table: str = "") -> str:
                 # SELECTing the int and mis-mapping 2 -> «жёлтая». It now sees only the
                 # decoded `zone_label` (text «красная»). Filtering by code still works:
                 # the WHERE-hint below documents zone IN (1,2) for red/yellow filters.
-                _hide_cols = {"zone"} if tbl == "metrics" else set()
+                #
+                # Hide xlsx-provenance columns (cell_ref/source_row/source_sheet) too:
+                # on «откуда данные» the model quoted cell addresses («B10», «B26 — по
+                # дорогам», the latter fabricated — there is no per-road breakdown).
+                # The source is the RZD system named in «ИСТОЧНИК ДЛЯ ОТВЕТА» (table
+                # comment), not a spreadsheet cell. Removing the columns removes the
+                # temptation; SELECTing them still works if ever truly needed.
+                _AUDIT_PROVENANCE = {"cell_ref", "source_row", "source_sheet"}
+                _hide_cols = ({"zone"} | _AUDIT_PROVENANCE) if tbl == "metrics" else set(_AUDIT_PROVENANCE)
                 for name, dtype, comment in cols:
                     if name in _hide_cols:
                         continue
@@ -402,12 +445,54 @@ def describe(table: str = "") -> str:
                             if nd == 0:
                                 continue   # empty column — don't waste tokens
                             if nd <= 40:
-                                cur.execute(
-                                    f"SELECT {col} FROM \"{tbl}\" WHERE {col} IS NOT NULL "
-                                    f"GROUP BY {col} ORDER BY count(*) DESC LIMIT 40"
-                                )
-                                vals = [str(v[0])[:40] for v in cur.fetchall()]
-                                out.append(f"  • {name}: {nd} различных значений: " + ", ".join(vals))
+                                # Road code/name columns: decode each value to its canonical
+                                # full name via road_codes (live JOIN, nothing hardcoded), so
+                                # the model reads «КРС=Красноярская» and never guesses the
+                                # name from memory (it mis-decoded КРС→«Краснодарская» before).
+                                if name in ("road", "road_code"):
+                                    cur.execute(
+                                        f'SELECT t.{col}, rc.canonical '
+                                        f'FROM (SELECT {col} FROM "{tbl}" WHERE {col} IS NOT NULL '
+                                        f'      GROUP BY {col} ORDER BY count(*) DESC LIMIT 40) t '
+                                        f'LEFT JOIN road_codes rc ON rc.code = t.{col}'
+                                    )
+                                    pairs = []
+                                    for code, canon in cur.fetchall():
+                                        code = str(code)[:40]
+                                        pairs.append(f"{code}={canon}" if canon and canon != code else code)
+                                    out.append(f"  • {name}: {nd} различных (код=полное имя для ОТВЕТА): "
+                                               + ", ".join(pairs))
+                                # spravki_delays.delay_code/delay_name carry ABBREVIATED reason
+                                # text («Вр. размещ. п.сост.») the model mis-expands («п.сост.»
+                                # → «пассажирских составов» instead of «подвижного состава»).
+                                # Decode each code to the FULL official name from the classifier
+                                # (delay_reason_codes, live JOIN) so the answer text is verbatim.
+                                elif tbl == "spravki_delays" and name in ("delay_code", "delay_name"):
+                                    cur.execute(
+                                        'SELECT t.delay_code, t.delay_name, drc.reason_name '
+                                        'FROM (SELECT delay_code, max(delay_name) AS delay_name '
+                                        '      FROM spravki_delays WHERE delay_code IS NOT NULL '
+                                        '      GROUP BY delay_code) t '
+                                        'LEFT JOIN delay_reason_codes drc ON drc.delay_code = t.delay_code '
+                                        'ORDER BY t.delay_code'
+                                    )
+                                    pairs = []
+                                    for dc, dn, full in cur.fetchall():
+                                        full = (full or "").strip()
+                                        if full:
+                                            pairs.append(f"{dc} = {full[:70]}")
+                                        else:
+                                            pairs.append(f"{dc} = {dn}")
+                                    out.append(f"  • {name}: {nd} различных. ПОЛНЫЕ названия "
+                                               f"(для текста ОТВЕТА — из классификатора, НЕ сокращение "
+                                               f"delay_name): " + "; ".join(pairs))
+                                else:
+                                    cur.execute(
+                                        f"SELECT {col} FROM \"{tbl}\" WHERE {col} IS NOT NULL "
+                                        f"GROUP BY {col} ORDER BY count(*) DESC LIMIT 40"
+                                    )
+                                    vals = [str(v[0])[:40] for v in cur.fetchall()]
+                                    out.append(f"  • {name}: {nd} различных значений: " + ", ".join(vals))
                             else:
                                 cur.execute(
                                     f"SELECT {col} FROM \"{tbl}\" WHERE {col} IS NOT NULL "
@@ -561,8 +646,11 @@ def find_indicator(query: str, k: int = 5) -> str:
         (('припорто', 'портов', 'выгрузк', 'перерабатыв', 'мощность порт'), 'spravki_port_stations'),
         (('сортировочн', 'юдино', 'дема', 'пермь-сорт', 'простой транзитн', 'рабочий парк'), 'spravki_sort_stations'),
         (('техническая скорость', 'участковая скорость', 'скорост'),  'spravki_speed'),
-        (('ограничен', 'асу воп', 'не предусм'),                       'spravki_speed_restrictions'),
-        (('локомотив', 'парк локомотив', 'недосодерж'),                'spravki_locomotives'),
+        # ограничения скорости → pre-computed view (fact+plan level joined, no
+        # row doubling). Falls back to the base table only if deeper cut needed.
+        (('ограничен', 'асу воп', 'не предусм'),                       'v_speed_restrictions'),
+        # локомотивы → pre-computed gruzovoe-by-traction view (no *_total trap).
+        (('локомотив', 'парк локомотив', 'недосодерж'),                'v_locomotives_traction'),
         # classifier — surfaces when user asks about responsibility / who is to blame /
         # what a code means. Always paired with spravki_delays via JOIN on delay_code.
         (('ответствен', 'по чьей вине', 'кто винов', 'расшифров', 'классификатор',
@@ -573,19 +661,21 @@ def find_indicator(query: str, k: int = 5) -> str:
 
     out = []
     if matches:
-        # spravki_* tables hold the DETAILED breakdown only for the date(s) they cover
-        # (see each table's coverage window in describe('metrics')). The SAME indicator
-        # as a network total also exists in METRICS across all report dates. So the
-        # routing depends on the date asked: a date inside the spravki coverage → use
-        # the spravki table for the detailed cut; a date outside it → use metrics.
-        # No dates are named here — the model compares the question's date to the live
-        # coverage windows shown by describe.
-        out.append("ИСТОЧНИК зависит от ДАТЫ в вопросе. Детальный разрез "
-                   "(по дорогам/станциям/кодам) — таблицы " + ", ".join(matches) +
-                   ", но ТОЛЬКО для дат из их покрытия (окна дат — в describe('metrics')). "
-                   "Если дата вопроса ВНЕ покрытия справки — тот же показатель как сетевой "
-                   "итог есть в metrics (см. кандидатов ниже). Сверь дату с покрытием и выбери "
-                   "источник; не утверждай, что показателя нет, не проверив metrics.")
+        # spravki_* tables hold the DETAILED breakdown only for ONE date — the last
+        # loaded доклад (the operational date). When the user asks "проанализируй …"
+        # without naming a date, that operational date is what they mean — NOT today,
+        # NOT MAX(metrics.report_date) (=April). Naming it here (live, not hardcoded)
+        # stops the model querying for an empty date and giving up / returning EMPTY.
+        op = _operational_date()
+        op_clause = (f" За эти таблицы бери дату {op.isoformat()} — это последний "
+                     f"оперативный доклад; на сегодняшнюю дату и на более поздние даты "
+                     f"metrics этих справок НЕТ (вернут 0 строк). Если в вопросе дата не "
+                     f"названа — используй {op.isoformat()}.") if op else ""
+        out.append("ИСТОЧНИК — детальный разрез (по дорогам/станциям/кодам): " +
+                   ", ".join(matches) + "." + op_clause +
+                   " Тот же показатель как сетевой итог есть и в metrics (кандидаты ниже) — "
+                   "для дат вне покрытия справок. Не утверждай, что данных нет, не проверив "
+                   "оперативную дату.")
         out.append("")
     out.append(f"Кандидаты в metrics по смыслу запроса (топ-{len(rows)}):")
     out.append("")
@@ -595,6 +685,27 @@ def find_indicator(query: str, k: int = 5) -> str:
         out.append(f"    name = «{name}»")
     out.append("")
     out.append("Для SQL используй name = '...' (вместо ILIKE / %).")
+    # Metrics indicators exist on MANY dates (unlike the single-date spravki). Without
+    # a named date the model silently takes one (usually MAX) and doesn't say which.
+    # Neutral declarative note (no coerced date): state the date range + ask it to name
+    # the date it used + flag the operational date as an option. Only when the question
+    # itself names no date and didn't route to a single-date spravki table.
+    if not matches and not re.search(r"\b20\d\d\b|\bянвар|феврал|март|апрел|\bмая\b|июн|июл|август|сентябр|октябр|ноябр|декабр", q_low):
+        try:
+            with psycopg.connect(DB_URL, connect_timeout=8) as c2:
+                with c2.cursor() as cu2:
+                    cu2.execute("SELECT min(report_date), max(report_date) FROM reports")
+                    dmn, dmx = cu2.fetchone()
+            op = _operational_date()
+            note = (f"\nДата не названа в вопросе. Показатели metrics есть на диапазон "
+                    f"{dmn}..{dmx}; по умолчанию берётся последняя ({dmx}). В ответе УКАЖИ, "
+                    f"на какую дату приведены данные.")
+            if op:
+                note += (f" Если нужен оперативный срез (как в ежедневном докладе) — это {op.isoformat()}; "
+                         f"если нужна свежесть — {dmx}. Выбери осознанно и назови дату.")
+            out.append(note)
+        except Exception:
+            pass
     return "\n".join(out) + _budget_note()
 
 
@@ -618,8 +729,20 @@ def current_datetime(timezone: str = "Europe/Moscow") -> str:
     except Exception:
         now = dt.datetime.utcnow()
         tzname = "UTC"
-    return (f"Сегодня {now.day} {_MON_RU[now.month]} {now.year} года, "
-            f"{_WDAY_RU[now.weekday()]}. Время: {now.strftime('%H:%M')} ({tzname}).")
+    msg = (f"Сегодня {now.day} {_MON_RU[now.month]} {now.year} года, "
+           f"{_WDAY_RU[now.weekday()]}. Время: {now.strftime('%H:%M')} ({tzname}).")
+    # Anchor the model to the operational report date: "today" has NO operational
+    # данные — all daily справки live on the last loaded доклад date. Without this
+    # the model queries справки for "today" / April, gets 0 rows, and gives up.
+    op = _operational_date()
+    if op:
+        msg += (f"\n\nВАЖНО: оперативные данные ЦГЦУ (справки о задержанных поездах, отказах, "
+                f"припортовых станциях, скорости, локомотивах, сортировочных станциях, ограничениях "
+                f"скорости) — за {op.day} {_MON_RU[op.month]} {op.year} года (последний загруженный "
+                f"доклад). На сегодняшнюю дату оперативных справок НЕТ. Для вопросов «проанализируй …» "
+                f"по этим темам используй дату {op.isoformat()} — НЕ сегодняшнюю и НЕ максимальную "
+                f"дату metrics. Не отвечай «данных нет», не проверив {op.isoformat()}.")
+    return msg
 
 
 @mcp.tool()
